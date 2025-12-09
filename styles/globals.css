@@ -502,3 +502,311 @@ a {
   text-transform: uppercase;
   font-size: 0.8rem;
 }
+
+/* ========================================
+   BURGER BUILDER - DRAG AND DROP STYLES
+   ======================================== */
+
+.montar-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.builder-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.builder-header h2 {
+  font-size: 1.5rem;
+  color: #8b1e24;
+}
+
+.burger-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Category Tabs */
+.categories-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+.category-tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  color: #666;
+}
+
+.category-tab:hover {
+  color: #2b1b11;
+}
+
+.category-tab.active {
+  color: #8b1e24;
+  font-weight: 600;
+}
+
+/* Ingredients Grid */
+.ingredients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: rgba(255,255,255,0.5);
+  border-radius: 12px;
+}
+
+/* Ingredient Card */
+.ingredient-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255,255,255,0.95);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+  touch-action: none;
+}
+
+.ingredient-card:hover {
+  border-color: #8b1e24;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.ingredient-card:active {
+  cursor: grabbing;
+}
+
+.ingredient-card.dragging {
+  opacity: 0.8;
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  z-index: 1000;
+}
+
+.ingredient-preview {
+  width: 60px;
+  height: 40px;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ingredient-info {
+  text-align: center;
+  width: 100%;
+}
+
+.ingredient-name {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2b1b11;
+  line-height: 1.2;
+  margin-bottom: 0.25rem;
+}
+
+.ingredient-price {
+  display: block;
+  font-size: 0.7rem;
+  color: #27ae60;
+  font-weight: 500;
+}
+
+/* Builder Section */
+.builder-section {
+  background: linear-gradient(135deg, #014d4e 0%, #01383a 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: #fff;
+}
+
+.builder-section h3 {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #f9c46b;
+}
+
+/* Drop Zone */
+.burger-drop-zone {
+  min-height: 200px;
+  background: rgba(255,255,255,0.1);
+  border: 3px dashed rgba(255,255,255,0.3);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.burger-drop-zone.drag-over {
+  border-color: #f9c46b;
+  background: rgba(249, 196, 107, 0.15);
+  transform: scale(1.02);
+}
+
+.drop-hint {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Burger Stack */
+.burger-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  max-width: 200px;
+}
+
+.burger-layer-item {
+  width: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.burger-layer-item:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.burger-layer-item:hover::after {
+  content: '✕';
+  position: absolute;
+  right: 8px;
+  color: #fff;
+  font-size: 0.7rem;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layer-label {
+  font-size: 0.6rem;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+/* Builder Summary */
+.builder-summary {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.summary-price {
+  font-size: 1.1rem;
+}
+
+.summary-price span {
+  margin-right: 0.5rem;
+  opacity: 0.8;
+}
+
+.summary-price strong {
+  color: #f9c46b;
+  font-size: 1.3rem;
+}
+
+.builder-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.builder-actions .btn.ghost {
+  color: #fff;
+  border-color: rgba(255,255,255,0.4);
+}
+
+.builder-actions .btn.ghost:hover {
+  border-color: #fff;
+}
+
+/* Sections */
+.extras-section,
+.summary-section {
+  margin-top: 1.5rem;
+}
+
+.extras-section h3,
+.summary-section h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .burger-builder {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    grid-template-rows: auto 1fr;
+    gap: 1.5rem;
+  }
+
+  .categories-tabs {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ingredients-grid {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: 400px;
+  }
+
+  .builder-section {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+
+  .burger-drop-zone {
+    min-height: 300px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ingredients-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}

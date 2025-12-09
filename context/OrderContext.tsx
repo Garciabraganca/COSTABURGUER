@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { EXTRAS, OPTIONS, STEPS } from '@/lib/menuData';
+import { getIngredientePorId } from '@/lib/ingredientsData';
 
 export type StepOption = {
   id: string;
@@ -15,6 +16,7 @@ export type BurgerItem = {
   nome: string;
   camadas: Record<string, StepOption>;
   preco: number;
+  ingredientes?: string[]; // Lista de IDs de ingredientes para burgers customizados
 };
 
 export type CustomerData = {
@@ -52,6 +54,7 @@ type OrderContextValue = {
   selections: Record<string, StepOption | undefined>;
   selectOption: (stepId: string, option: StepOption) => void;
   addCurrentBurgerToCart: () => void;
+  addCustomBurgerToCart: (ingredientes: string[], preco: number) => void;
   cart: BurgerItem[];
   removeCartItem: (id: string) => void;
   extrasSelecionados: string[];
@@ -125,6 +128,29 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     resetSelections();
   }
 
+  function addCustomBurgerToCart(ingredientes: string[], preco: number) {
+    // Monta descrição dos ingredientes
+    const nomes = ingredientes
+      .map(id => getIngredientePorId(id)?.nome)
+      .filter(Boolean)
+      .join(', ');
+
+    const item: BurgerItem = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2, 7)}`,
+      nome: 'Burger Personalizado',
+      camadas: {
+        custom: {
+          id: 'custom',
+          nome: nomes || 'Personalizado',
+          preco: preco,
+        },
+      },
+      ingredientes: ingredientes,
+      preco: preco,
+    };
+    setCart((prev) => [...prev, item]);
+  }
+
   function removeCartItem(id: string) {
     setCart((prev) => prev.filter((item) => item.id !== id));
   }
@@ -190,6 +216,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     selections,
     selectOption,
     addCurrentBurgerToCart,
+    addCustomBurgerToCart,
     cart,
     removeCartItem,
     extrasSelecionados,
