@@ -1,28 +1,28 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const pedido = await prisma.pedido.findUnique({ where: { id: params.id } });
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const pedido = await prisma.pedido.findUnique({
+    where: { id: params.id }
+  });
+
   if (!pedido) {
-    return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
+    return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
   }
+
   return NextResponse.json(pedido);
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const body = await request.json();
-    const { status } = body;
-    if (!status) {
-      return NextResponse.json({ error: 'Status obrigatório' }, { status: 400 });
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const body = await req.json();
+
+  const pedido = await prisma.pedido.update({
+    where: { id: params.id },
+    data: {
+      status: body.status,
+      updatedAt: new Date()
     }
-    const pedido = await prisma.pedido.update({
-      where: { id: params.id },
-      data: { status },
-    });
-    return NextResponse.json(pedido);
-  } catch (error) {
-    console.error('Erro ao atualizar pedido', error);
-    return NextResponse.json({ error: 'Erro ao atualizar pedido' }, { status: 500 });
-  }
+  });
+
+  return NextResponse.json(pedido);
 }
