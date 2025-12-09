@@ -16,8 +16,7 @@ export default function Home() {
     >
       <h1 style={{ fontSize: "32px", fontWeight: "bold" }}>🍔 Costa-Burger</h1>
       <p>
-        Monte seu hambúrguer em camadas e acompanhe o pedido em tempo real. Esse
-        é o ponto de partida do fluxo de pedidos.
+        Monte seu hambúrguer em camadas e acompanhe o pedido em tempo real.
       </p>
 
       <a
