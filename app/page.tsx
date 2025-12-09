@@ -1,21 +1,34 @@
-import Link from 'next/link';
-import BurgerPreview from '@/components/BurgerPreview';
+"use client";
 
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="hero">
-      <p className="eyebrow">Bem-vindo à Costa-Burger</p>
-      <h2>Monte seu burger em camadas</h2>
-      <p>Escolha pão, carne, queijos, extras e molhos para criar a combinação perfeita.</p>
-      <BurgerPreview />
-      <div className="cta-group">
-        <Link href="/montar" className="btn primary">
-          Começar meu burger
-        </Link>
-        <Link href="/montar" className="btn ghost">
-          Ver burgers da casa
-        </Link>
-      </div>
-    </div>
+    <main style={{
+      padding: "40px",
+      fontFamily: "sans-serif",
+      display: "flex",
+      flexDirection: "column",
+      gap: "20px",
+      maxWidth: "500px",
+      margin: "0 auto",
+      textAlign: "center"
+    }}>
+      <h1 style={{ fontSize: "32px", fontWeight: "bold" }}>🍔 Costa-Burger</h1>
+      <p>Monte seu hambúrguer em camadas e acompanhe seu pedido em tempo real.</p>
+
+      <a
+        href="/montar"
+        style={{
+          background: "#b22222",
+          padding: "16px 22px",
+          borderRadius: "8px",
+          color: "white",
+          textDecoration: "none",
+          fontWeight: "bold",
+          fontSize: "18px",
+        }}
+      >
+        Começar Pedido →
+      </a>
+    </main>
   );
 }
