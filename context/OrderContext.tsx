@@ -131,7 +131,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   function addCustomBurgerToCart(ingredientes: string[], preco: number) {
     // Monta descrição dos ingredientes
     const nomes = ingredientes
-      .map(id => getIngredientePorId(id)?.nome)
+      .map((id) => getIngredientePorId(id)?.name ?? id)
       .filter(Boolean)
       .join(', ');
 
