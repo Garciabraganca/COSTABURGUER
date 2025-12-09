@@ -1,15 +1,76 @@
-// Mapeamento completo de ingredientes baseado nas imagens do catálogo
-// Cada ingrediente tem: id, nome, categoria, preço, cor (para fallback CSS), e imagem
+// Mapeamento de ingredientes utilizando as páginas de catálogo como sprite sheets
 
-export type Ingredient = {
+export type IngredientCategory =
+  | 'pao'
+  | 'carne'
+  | 'queijo'
+  | 'molho'
+  | 'extra'
+  | 'vegetal'
+  | 'especial';
+
+export interface Ingredient {
   id: string;
-  nome: string;
-  categoria: 'pao' | 'carne' | 'queijo' | 'molho' | 'extra' | 'vegetal' | 'especial';
-  preco: number;
-  cor: string; // Cor para representação visual
-  altura: number; // Altura da camada em pixels
-  ordem: number; // Ordem de empilhamento (menor = mais embaixo)
+  name: string;
+  price: number;
+  category: IngredientCategory;
+  sheet: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  order: number;
+}
+
+const GRID_COLUMNS = 12;
+const GRID_ROWS = 6;
+export const SPRITE_CELL_SIZE = 189;
+export const SPRITE_SHEETS = [
+  '/ingredients/catalogo-1.png',
+  '/ingredients/catalogo-2.png',
+  '/ingredients/catalogo-3.png',
+];
+
+export const SPRITE_SHEET_SIZE = {
+  width: SPRITE_CELL_SIZE * GRID_COLUMNS,
+  height: SPRITE_CELL_SIZE * GRID_ROWS,
 };
+
+function spriteFromSlot(slot: number) {
+  const sheetIndex = Math.floor(slot / (GRID_COLUMNS * GRID_ROWS));
+  const localSlot = slot % (GRID_COLUMNS * GRID_ROWS);
+  const column = localSlot % GRID_COLUMNS;
+  const row = Math.floor(localSlot / GRID_COLUMNS);
+
+  return {
+    sheet: SPRITE_SHEETS[Math.min(sheetIndex, SPRITE_SHEETS.length - 1)],
+    x: column * SPRITE_CELL_SIZE,
+    y: row * SPRITE_CELL_SIZE,
+    width: SPRITE_CELL_SIZE,
+    height: SPRITE_CELL_SIZE,
+  } satisfies Pick<Ingredient, 'sheet' | 'x' | 'y' | 'width' | 'height'>;
+}
+
+let currentSlot = 0;
+function nextSpriteSlot(slot?: number) {
+  if (typeof slot === 'number') {
+    return spriteFromSlot(slot);
+  }
+
+  const sprite = spriteFromSlot(currentSlot);
+  currentSlot += 1;
+  return sprite;
+}
+
+function makeIngredient(
+  data: Omit<Ingredient, 'sheet' | 'x' | 'y' | 'width' | 'height'> & {
+    slot?: number;
+  }
+): Ingredient {
+  const sprite = nextSpriteSlot(data.slot);
+  const { slot, ...rest } = data;
+  return { ...rest, ...sprite } satisfies Ingredient;
+}
 
 // Categorias para organização visual
 export const CATEGORIAS = {
@@ -23,102 +84,102 @@ export const CATEGORIAS = {
 };
 
 // Ingredientes extraídos das imagens do catálogo
-export const INGREDIENTES: Ingredient[] = [
+export const ingredients: Ingredient[] = [
   // === PÃES (Base e Topo) ===
-  { id: 'pao-australiano-base', nome: 'Pão Australiano (Base)', categoria: 'pao', preco: 3, cor: '#8B4513', altura: 25, ordem: 1 },
-  { id: 'pao-australiano-topo', nome: 'Pão Australiano (Topo)', categoria: 'pao', preco: 0, cor: '#8B4513', altura: 35, ordem: 100 },
-  { id: 'pao-brioche-base', nome: 'Pão Brioche (Base)', categoria: 'pao', preco: 2.5, cor: '#DEB887', altura: 25, ordem: 1 },
-  { id: 'pao-brioche-topo', nome: 'Pão Brioche (Topo)', categoria: 'pao', preco: 0, cor: '#DEB887', altura: 35, ordem: 100 },
-  { id: 'pao-beterraba-base', nome: 'Pão Beterraba (Base)', categoria: 'pao', preco: 4, cor: '#8B0000', altura: 25, ordem: 1 },
-  { id: 'pao-beterraba-topo', nome: 'Pão Beterraba (Topo)', categoria: 'pao', preco: 0, cor: '#8B0000', altura: 35, ordem: 100 },
-  { id: 'pao-gergelin-base', nome: 'Pão Gergelim (Base)', categoria: 'pao', preco: 2, cor: '#F5DEB3', altura: 25, ordem: 1 },
-  { id: 'pao-gergelin-topo', nome: 'Pão Gergelim (Topo)', categoria: 'pao', preco: 0, cor: '#F5DEB3', altura: 35, ordem: 100 },
-  { id: 'pao-gergelin-gold-base', nome: 'Pão Gergelim Gold (Base)', categoria: 'pao', preco: 3.5, cor: '#DAA520', altura: 25, ordem: 1 },
-  { id: 'pao-gergelin-gold-topo', nome: 'Pão Gergelim Gold (Topo)', categoria: 'pao', preco: 0, cor: '#DAA520', altura: 35, ordem: 100 },
-  { id: 'pao-gergelin-black-base', nome: 'Pão Gergelim Black (Base)', categoria: 'pao', preco: 4, cor: '#2C2C2C', altura: 25, ordem: 1 },
-  { id: 'pao-gergelin-black-topo', nome: 'Pão Gergelim Black (Topo)', categoria: 'pao', preco: 0, cor: '#2C2C2C', altura: 35, ordem: 100 },
+  makeIngredient({ id: 'pao-australiano-base', name: 'Pão Australiano (Base)', category: 'pao', price: 3, order: 1 }),
+  makeIngredient({ id: 'pao-australiano-topo', name: 'Pão Australiano (Topo)', category: 'pao', price: 0, order: 100 }),
+  makeIngredient({ id: 'pao-brioche-base', name: 'Pão Brioche (Base)', category: 'pao', price: 2.5, order: 1 }),
+  makeIngredient({ id: 'pao-brioche-topo', name: 'Pão Brioche (Topo)', category: 'pao', price: 0, order: 100 }),
+  makeIngredient({ id: 'pao-beterraba-base', name: 'Pão Beterraba (Base)', category: 'pao', price: 4, order: 1 }),
+  makeIngredient({ id: 'pao-beterraba-topo', name: 'Pão Beterraba (Topo)', category: 'pao', price: 0, order: 100 }),
+  makeIngredient({ id: 'pao-gergelin-base', name: 'Pão Gergelim (Base)', category: 'pao', price: 2, order: 1 }),
+  makeIngredient({ id: 'pao-gergelin-topo', name: 'Pão Gergelim (Topo)', category: 'pao', price: 0, order: 100 }),
+  makeIngredient({ id: 'pao-gergelin-gold-base', name: 'Pão Gergelim Gold (Base)', category: 'pao', price: 3.5, order: 1 }),
+  makeIngredient({ id: 'pao-gergelin-gold-topo', name: 'Pão Gergelim Gold (Topo)', category: 'pao', price: 0, order: 100 }),
+  makeIngredient({ id: 'pao-gergelin-black-base', name: 'Pão Gergelim Black (Base)', category: 'pao', price: 4, order: 1 }),
+  makeIngredient({ id: 'pao-gergelin-black-topo', name: 'Pão Gergelim Black (Topo)', category: 'pao', price: 0, order: 100 }),
 
   // === CARNES ===
-  { id: 'smash-70g', nome: 'Smash 70g', categoria: 'carne', preco: 8, cor: '#5D4037', altura: 15, ordem: 20 },
-  { id: 'smash-90g', nome: 'Smash 90g', categoria: 'carne', preco: 10, cor: '#5D4037', altura: 18, ordem: 20 },
-  { id: 'smash-120g', nome: 'Smash 120g', categoria: 'carne', preco: 12, cor: '#5D4037', altura: 22, ordem: 20 },
-  { id: 'blend-bovino-90', nome: 'Blend Bovino 90g', categoria: 'carne', preco: 11, cor: '#6D4C41', altura: 20, ordem: 20 },
-  { id: 'blend-bovino-120', nome: 'Blend Bovino 120g', categoria: 'carne', preco: 14, cor: '#6D4C41', altura: 24, ordem: 20 },
-  { id: 'blend-bovino-160', nome: 'Blend Bovino 160g', categoria: 'carne', preco: 18, cor: '#6D4C41', altura: 28, ordem: 20 },
-  { id: 'blend-bovino-200', nome: 'Blend Bovino 200g', categoria: 'carne', preco: 22, cor: '#6D4C41', altura: 32, ordem: 20 },
-  { id: 'blend-frango', nome: 'Blend de Frango', categoria: 'carne', preco: 12, cor: '#D4A574', altura: 20, ordem: 20 },
-  { id: 'blend-vegetariano', nome: 'Blend Vegetariano', categoria: 'carne', preco: 14, cor: '#8D6E63', altura: 20, ordem: 20 },
-  { id: 'frango-empanado', nome: 'Frango Empanado', categoria: 'carne', preco: 15, cor: '#DEB887', altura: 25, ordem: 20 },
-  { id: 'costela-desfiada', nome: 'Costela Desfiada', categoria: 'carne', preco: 20, cor: '#8B4513', altura: 22, ordem: 20 },
-  { id: 'carne-desfiada', nome: 'Carne Desfiada', categoria: 'carne', preco: 16, cor: '#A0522D', altura: 20, ordem: 20 },
+  makeIngredient({ id: 'smash-70g', name: 'Smash 70g', category: 'carne', price: 8, order: 20 }),
+  makeIngredient({ id: 'smash-90g', name: 'Smash 90g', category: 'carne', price: 10, order: 20 }),
+  makeIngredient({ id: 'smash-120g', name: 'Smash 120g', category: 'carne', price: 12, order: 20 }),
+  makeIngredient({ id: 'blend-bovino-90', name: 'Blend Bovino 90g', category: 'carne', price: 11, order: 20 }),
+  makeIngredient({ id: 'blend-bovino-120', name: 'Blend Bovino 120g', category: 'carne', price: 14, order: 20 }),
+  makeIngredient({ id: 'blend-bovino-160', name: 'Blend Bovino 160g', category: 'carne', price: 18, order: 20 }),
+  makeIngredient({ id: 'blend-bovino-200', name: 'Blend Bovino 200g', category: 'carne', price: 22, order: 20 }),
+  makeIngredient({ id: 'blend-frango', name: 'Blend de Frango', category: 'carne', price: 12, order: 20 }),
+  makeIngredient({ id: 'blend-vegetariano', name: 'Blend Vegetariano', category: 'carne', price: 14, order: 20 }),
+  makeIngredient({ id: 'frango-empanado', name: 'Frango Empanado', category: 'carne', price: 15, order: 20 }),
+  makeIngredient({ id: 'costela-desfiada', name: 'Costela Desfiada', category: 'carne', price: 20, order: 20 }),
+  makeIngredient({ id: 'carne-desfiada', name: 'Carne Desfiada', category: 'carne', price: 16, order: 20 }),
 
   // === QUEIJOS ===
-  { id: 'cheddar-fatia', nome: 'Cheddar (Fatia)', categoria: 'queijo', preco: 3, cor: '#FF8C00', altura: 8, ordem: 30 },
-  { id: 'cheddar-cremoso', nome: 'Cheddar Cremoso', categoria: 'queijo', preco: 4, cor: '#FFA500', altura: 10, ordem: 30 },
-  { id: 'mussarela-fatia', nome: 'Mussarela (Fatia)', categoria: 'queijo', preco: 2.5, cor: '#FFFACD', altura: 8, ordem: 30 },
-  { id: 'mussarela-ralada', nome: 'Mussarela Ralada', categoria: 'queijo', preco: 3, cor: '#FFF8DC', altura: 12, ordem: 30 },
-  { id: 'prato-fatia', nome: 'Queijo Prato (Fatia)', categoria: 'queijo', preco: 2.5, cor: '#F0E68C', altura: 8, ordem: 30 },
-  { id: 'provolone', nome: 'Provolone', categoria: 'queijo', preco: 4, cor: '#FAFAD2', altura: 8, ordem: 30 },
-  { id: 'cream-cheese', nome: 'Cream Cheese', categoria: 'queijo', preco: 4.5, cor: '#FFFAF0', altura: 10, ordem: 30 },
-  { id: 'catupiry', nome: 'Catupiry', categoria: 'queijo', preco: 4, cor: '#FFF5EE', altura: 10, ordem: 30 },
-  { id: 'queijo-coalho', nome: 'Queijo Coalho', categoria: 'queijo', preco: 5, cor: '#F5DEB3', altura: 12, ordem: 30 },
-  { id: 'gorgonzola', nome: 'Gorgonzola', categoria: 'queijo', preco: 6, cor: '#E8E8D0', altura: 10, ordem: 30 },
+  makeIngredient({ id: 'cheddar-fatia', name: 'Cheddar (Fatia)', category: 'queijo', price: 3, order: 30 }),
+  makeIngredient({ id: 'cheddar-cremoso', name: 'Cheddar Cremoso', category: 'queijo', price: 4, order: 30 }),
+  makeIngredient({ id: 'mussarela-fatia', name: 'Mussarela (Fatia)', category: 'queijo', price: 2.5, order: 30 }),
+  makeIngredient({ id: 'mussarela-ralada', name: 'Mussarela Ralada', category: 'queijo', price: 3, order: 30 }),
+  makeIngredient({ id: 'prato-fatia', name: 'Queijo Prato (Fatia)', category: 'queijo', price: 2.5, order: 30 }),
+  makeIngredient({ id: 'provolone', name: 'Provolone', category: 'queijo', price: 4, order: 30 }),
+  makeIngredient({ id: 'cream-cheese', name: 'Cream Cheese', category: 'queijo', price: 4.5, order: 30 }),
+  makeIngredient({ id: 'catupiry', name: 'Catupiry', category: 'queijo', price: 4, order: 30 }),
+  makeIngredient({ id: 'queijo-coalho', name: 'Queijo Coalho', category: 'queijo', price: 5, order: 30 }),
+  makeIngredient({ id: 'gorgonzola', name: 'Gorgonzola', category: 'queijo', price: 6, order: 30 }),
 
   // === MOLHOS ===
-  { id: 'ketchup', nome: 'Ketchup', categoria: 'molho', preco: 0, cor: '#DC143C', altura: 6, ordem: 40 },
-  { id: 'mostarda', nome: 'Mostarda', categoria: 'molho', preco: 0, cor: '#FFD700', altura: 6, ordem: 40 },
-  { id: 'maionese', nome: 'Maionese', categoria: 'molho', preco: 0, cor: '#FFF8DC', altura: 6, ordem: 40 },
-  { id: 'barbecue', nome: 'Barbecue', categoria: 'molho', preco: 2, cor: '#8B0000', altura: 6, ordem: 40 },
-  { id: 'molho-verde', nome: 'Molho Verde', categoria: 'molho', preco: 2, cor: '#228B22', altura: 6, ordem: 40 },
-  { id: 'molho-rose', nome: 'Molho Rosé', categoria: 'molho', preco: 2, cor: '#FFB6C1', altura: 6, ordem: 40 },
-  { id: 'molho-especial', nome: 'Molho Especial', categoria: 'molho', preco: 3, cor: '#CD853F', altura: 6, ordem: 40 },
-  { id: 'billy-jack', nome: 'Billy & Jack', categoria: 'molho', preco: 3, cor: '#DEB887', altura: 6, ordem: 40 },
-  { id: 'molho-shoyu', nome: 'Molho Shoyu', categoria: 'molho', preco: 2, cor: '#4A3728', altura: 6, ordem: 40 },
-  { id: 'geleia-pimenta', nome: 'Geléia de Pimenta', categoria: 'molho', preco: 4, cor: '#B22222', altura: 6, ordem: 40 },
+  makeIngredient({ id: 'ketchup', name: 'Ketchup', category: 'molho', price: 0, order: 40 }),
+  makeIngredient({ id: 'mostarda', name: 'Mostarda', category: 'molho', price: 0, order: 40 }),
+  makeIngredient({ id: 'maionese', name: 'Maionese', category: 'molho', price: 0, order: 40 }),
+  makeIngredient({ id: 'barbecue', name: 'Barbecue', category: 'molho', price: 2, order: 40 }),
+  makeIngredient({ id: 'molho-verde', name: 'Molho Verde', category: 'molho', price: 2, order: 40 }),
+  makeIngredient({ id: 'molho-rose', name: 'Molho Rosé', category: 'molho', price: 2, order: 40 }),
+  makeIngredient({ id: 'molho-especial', name: 'Molho Especial', category: 'molho', price: 3, order: 40 }),
+  makeIngredient({ id: 'billy-jack', name: 'Billy & Jack', category: 'molho', price: 3, order: 40 }),
+  makeIngredient({ id: 'molho-shoyu', name: 'Molho Shoyu', category: 'molho', price: 2, order: 40 }),
+  makeIngredient({ id: 'geleia-pimenta', name: 'Geléia de Pimenta', category: 'molho', price: 4, order: 40 }),
 
   // === VEGETAIS ===
-  { id: 'alface', nome: 'Alface', categoria: 'vegetal', preco: 1, cor: '#90EE90', altura: 12, ordem: 50 },
-  { id: 'tomate', nome: 'Tomate', categoria: 'vegetal', preco: 1, cor: '#FF6347', altura: 10, ordem: 50 },
-  { id: 'cebola-rodela', nome: 'Cebola (Rodelas)', categoria: 'vegetal', preco: 1, cor: '#E6E6FA', altura: 8, ordem: 50 },
-  { id: 'cebola-roxa', nome: 'Cebola Roxa', categoria: 'vegetal', preco: 1.5, cor: '#9370DB', altura: 8, ordem: 50 },
-  { id: 'cebola-caramelizada', nome: 'Cebola Caramelizada', categoria: 'vegetal', preco: 3, cor: '#8B4513', altura: 10, ordem: 50 },
-  { id: 'picles', nome: 'Picles', categoria: 'vegetal', preco: 2, cor: '#9ACD32', altura: 8, ordem: 50 },
-  { id: 'rucula', nome: 'Rúcula', categoria: 'vegetal', preco: 2, cor: '#2E8B57', altura: 12, ordem: 50 },
-  { id: 'champignon', nome: 'Champignon', categoria: 'vegetal', preco: 4, cor: '#F5F5DC', altura: 10, ordem: 50 },
+  makeIngredient({ id: 'alface', name: 'Alface', category: 'vegetal', price: 1, order: 50 }),
+  makeIngredient({ id: 'tomate', name: 'Tomate', category: 'vegetal', price: 1, order: 50 }),
+  makeIngredient({ id: 'cebola-rodela', name: 'Cebola (Rodelas)', category: 'vegetal', price: 1, order: 50 }),
+  makeIngredient({ id: 'cebola-roxa', name: 'Cebola Roxa', category: 'vegetal', price: 1.5, order: 50 }),
+  makeIngredient({ id: 'cebola-caramelizada', name: 'Cebola Caramelizada', category: 'vegetal', price: 3, order: 50 }),
+  makeIngredient({ id: 'picles', name: 'Picles', category: 'vegetal', price: 2, order: 50 }),
+  makeIngredient({ id: 'rucula', name: 'Rúcula', category: 'vegetal', price: 2, order: 50 }),
+  makeIngredient({ id: 'champignon', name: 'Champignon', category: 'vegetal', price: 4, order: 50 }),
 
   // === EXTRAS ===
-  { id: 'bacon-fatia', nome: 'Bacon (Fatias)', categoria: 'extra', preco: 5, cor: '#CD5C5C', altura: 10, ordem: 60 },
-  { id: 'bacon-crispy', nome: 'Bacon Crispy', categoria: 'extra', preco: 6, cor: '#A52A2A', altura: 12, ordem: 60 },
-  { id: 'bacon-cubo', nome: 'Bacon em Cubos', categoria: 'extra', preco: 5, cor: '#B22222', altura: 10, ordem: 60 },
-  { id: 'ovo-frito', nome: 'Ovo Frito', categoria: 'extra', preco: 3, cor: '#FFD700', altura: 15, ordem: 60 },
-  { id: 'ovo-cozido', nome: 'Ovo Cozido', categoria: 'extra', preco: 2, cor: '#FFFACD', altura: 12, ordem: 60 },
-  { id: 'doritos', nome: 'Doritos', categoria: 'extra', preco: 3, cor: '#FF4500', altura: 10, ordem: 60 },
-  { id: 'batata-palha', nome: 'Batata Palha', categoria: 'extra', preco: 2, cor: '#DAA520', altura: 10, ordem: 60 },
-  { id: 'aneis-cebola', nome: 'Anéis de Cebola', categoria: 'extra', preco: 5, cor: '#DEB887', altura: 15, ordem: 60 },
-  { id: 'calabresa-fatia', nome: 'Calabresa (Fatias)', categoria: 'extra', preco: 4, cor: '#CD5C5C', altura: 10, ordem: 60 },
-  { id: 'presunto', nome: 'Presunto', categoria: 'extra', preco: 4, cor: '#FFB6C1', altura: 8, ordem: 60 },
-  { id: 'salame', nome: 'Salame', categoria: 'extra', preco: 5, cor: '#8B0000', altura: 8, ordem: 60 },
+  makeIngredient({ id: 'bacon-fatia', name: 'Bacon (Fatias)', category: 'extra', price: 5, order: 60 }),
+  makeIngredient({ id: 'bacon-crispy', name: 'Bacon Crispy', category: 'extra', price: 6, order: 60 }),
+  makeIngredient({ id: 'bacon-cubo', name: 'Bacon em Cubos', category: 'extra', price: 5, order: 60 }),
+  makeIngredient({ id: 'ovo-frito', name: 'Ovo Frito', category: 'extra', price: 3, order: 60 }),
+  makeIngredient({ id: 'ovo-cozido', name: 'Ovo Cozido', category: 'extra', price: 2, order: 60 }),
+  makeIngredient({ id: 'doritos', name: 'Doritos', category: 'extra', price: 3, order: 60 }),
+  makeIngredient({ id: 'batata-palha', name: 'Batata Palha', category: 'extra', price: 2, order: 60 }),
+  makeIngredient({ id: 'aneis-cebola', name: 'Anéis de Cebola', category: 'extra', price: 5, order: 60 }),
+  makeIngredient({ id: 'calabresa-fatia', name: 'Calabresa (Fatias)', category: 'extra', price: 4, order: 60 }),
+  makeIngredient({ id: 'presunto', name: 'Presunto', category: 'extra', price: 4, order: 60 }),
+  makeIngredient({ id: 'salame', name: 'Salame', category: 'extra', price: 5, order: 60 }),
 
   // === ESPECIAIS ===
-  { id: 'abacaxi', nome: 'Abacaxi', categoria: 'especial', preco: 3, cor: '#FFD700', altura: 10, ordem: 70 },
-  { id: 'creme-doritos', nome: 'Creme de Doritos', categoria: 'especial', preco: 4, cor: '#FF6347', altura: 10, ordem: 70 },
-  { id: 'catupiry-empanado', nome: 'Catupiry Empanado', categoria: 'especial', preco: 5, cor: '#FFF8DC', altura: 15, ordem: 70 },
+  makeIngredient({ id: 'abacaxi', name: 'Abacaxi', category: 'especial', price: 3, order: 70 }),
+  makeIngredient({ id: 'creme-doritos', name: 'Creme de Doritos', category: 'especial', price: 4, order: 70 }),
+  makeIngredient({ id: 'catupiry-empanado', name: 'Catupiry Empanado', category: 'especial', price: 5, order: 70 }),
 ];
 
 // Função para obter ingredientes por categoria
-export function getIngredientesPorCategoria(categoria: Ingredient['categoria']) {
-  return INGREDIENTES.filter(ing => ing.categoria === categoria);
+export function getIngredientesPorCategoria(categoria: Ingredient['category']) {
+  return ingredients.filter(ing => ing.category === categoria);
 }
 
 // Função para obter um ingrediente por ID
 export function getIngredientePorId(id: string) {
-  return INGREDIENTES.find(ing => ing.id === id);
+  return ingredients.find(ing => ing.id === id);
 }
 
 // Função para calcular preço total de uma lista de ingredientes
 export function calcularPrecoTotal(ingredientesIds: string[]) {
   return ingredientesIds.reduce((total, id) => {
     const ing = getIngredientePorId(id);
-    return total + (ing?.preco || 0);
+    return total + (ing?.price || 0);
   }, 0);
 }

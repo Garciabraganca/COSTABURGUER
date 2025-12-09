@@ -2,7 +2,7 @@
 
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Ingredient } from '@/lib/ingredientsData';
+import { Ingredient, SPRITE_SHEET_SIZE } from '@/lib/ingredientsData';
 
 type Props = {
   ingredient: Ingredient;
@@ -14,6 +14,10 @@ export default function DraggableIngredient({ ingredient, currencyFormat }: Prop
     id: ingredient.id,
     data: ingredient,
   });
+
+  const previewScale = 0.45;
+  const previewWidth = ingredient.width * previewScale;
+  const previewHeight = ingredient.height * previewScale;
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -30,13 +34,19 @@ export default function DraggableIngredient({ ingredient, currencyFormat }: Prop
       className="ingredient-card"
     >
       <div
-        className="ingredient-preview"
-        style={{ backgroundColor: ingredient.cor }}
+        className="ingredient-sprite"
+        style={{
+          width: previewWidth,
+          height: previewHeight,
+          backgroundImage: `url(${ingredient.sheet})`,
+          backgroundPosition: `-${ingredient.x * previewScale}px -${ingredient.y * previewScale}px`,
+          backgroundSize: `${SPRITE_SHEET_SIZE.width * previewScale}px ${SPRITE_SHEET_SIZE.height * previewScale}px`,
+        }}
       />
       <div className="ingredient-info">
-        <span className="ingredient-name">{ingredient.nome}</span>
+        <span className="ingredient-name">{ingredient.name}</span>
         <span className="ingredient-price">
-          {ingredient.preco > 0 ? `+ ${currencyFormat(ingredient.preco)}` : 'Incluso'}
+          {ingredient.price > 0 ? `+ ${currencyFormat(ingredient.price)}` : 'Incluso'}
         </span>
       </div>
     </div>
