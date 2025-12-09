@@ -16,7 +16,15 @@ posicionamento de entrega.
    ```bash
    npm run dev
    ```
-4. Acesse http://localhost:3000 e navegue pelos fluxos `/`, `/montar`, `/sacola`, `/entrega`, `/pagamento` e `/pedido/[id]`.
+4. Valide o código antes de commitar (a configuração do ESLint já está versionada para não perguntar nada em CI):
+   ```bash
+   npm run lint
+   ```
+5. Gere o build otimizado para produção ou Vercel:
+   ```bash
+   npm run build
+   ```
+6. Acesse http://localhost:3000 e navegue pelos fluxos `/`, `/montar`, `/sacola`, `/entrega`, `/pagamento` e `/pedido/[id]`.
 
 ## Estrutura principal
 
@@ -27,6 +35,11 @@ posicionamento de entrega.
 - `pages/api/entregas` – Endpoint para o motoboy atualizar latitude/longitude.
 - `pages/api/mercadopago` – Stubs para preference e webhook de pagamento aprovado.
 - `prisma/schema.prisma` – Modelagem de Pedido, ItemPedido, Endereco, StatusPedido e Entrega.
+
+## Organização do projeto
+
+- O código legado em HTML/JS simples foi removido da raiz para evitar conflitos com o build do Next.js. O logo, CSS e componentes agora
+  vivem nas pastas `public/`, `styles/`, `pages/` e `components/`, seguindo a estrutura padrão do framework.
 
 ## Próximos passos
 
