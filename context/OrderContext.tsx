@@ -27,13 +27,20 @@ export type CustomerData = {
   tipoEntrega?: 'ENTREGA' | 'RETIRADA';
 };
 
+export type OrderItem = {
+  nome: string;
+  preco: number;
+  camadas?: Record<string, StepOption>;
+  selecionados?: string[];
+};
+
 export type OrderPayload = {
   nome: string;
   celular: string;
   endereco: string;
   tipoEntrega: string;
   total: number;
-  itens: unknown;
+  itens: OrderItem[];
 };
 
 type OrderContextValue = {
@@ -141,7 +148,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
           .filter(Boolean)
           .join(', ') || 'Endereço não informado';
 
-    const itens = [
+    const itens: OrderItem[] = [
       ...cart.map((item) => ({
         nome: item.nome,
         preco: item.preco,
