@@ -1,246 +1,298 @@
 "use client";
 
-import { useState } from 'react';
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-} from '@dnd-kit/core';
-import DraggableIngredient from './DraggableIngredient';
+import { useMemo, useState } from 'react';
+import SpriteImage from './SpriteImage';
 import {
   Ingredient,
-  SPRITE_SHEET_SIZE,
-  ingredients,
+  IngredientCategory,
   CATEGORIAS,
   getIngredientePorId,
+  getIngredientesPorCategoria,
   calcularPrecoTotal,
 } from '@/lib/ingredientsData';
+
+const CATEGORY_FLOW: IngredientCategory[] = [
+  'pao',
+  'carne',
+  'queijo',
+  'molho',
+  'vegetal',
+  'extra',
+  'especial',
+];
 
 type Props = {
   onBurgerComplete: (ingredientes: string[], preco: number) => void;
   currencyFormat: (value: number) => string;
 };
 
-function DropZone({ children, isOver }: { children: React.ReactNode; isOver: boolean }) {
+type CategoryModalProps = {
+  isOpen: boolean;
+  category: IngredientCategory;
+  onClose: () => void;
+  onSelect: (ingredientId: string) => void;
+  currencyFormat: (value: number) => string;
+};
+
+function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: CategoryModalProps) {
+  if (!isOpen) return null;
+
+  const ingredientes = getIngredientesPorCategoria(category);
+
   return (
-    <div className={`burger-drop-zone ${isOver ? 'drag-over' : ''}`}>
-      <div className="burger-stack">
-        {children}
+    <div className="modal-overlay" role="dialog" aria-modal="true">
+      <div className="modal-card">
+        <div className="modal-header">
+          <div>
+            <p className="eyebrow">Categoria</p>
+            <h3>{CATEGORIAS[category].label}</h3>
+            <p className="step-subtitle">Escolha um ingrediente para continuar</p>
+          </div>
+          <button className="btn ghost small" onClick={onClose} aria-label="Fechar modal">
+            Pular etapa
+          </button>
+        </div>
+
+        <div className="modal-grid">
+          {ingredientes.map((ing) => (
+            <button
+              key={ing.id}
+              className="modal-ingredient-card"
+              onClick={() => onSelect(ing.id)}
+            >
+              <SpriteImage
+                sheet={ing.sheet}
+                x={ing.x}
+                y={ing.y}
+                width={ing.width}
+                height={ing.height}
+                scale={0.42}
+                ariaLabel={ing.name}
+              />
+              <div className="modal-ingredient-info">
+                <span>{ing.name}</span>
+                <small>
+                  {ing.price > 0 ? `+ ${currencyFormat(ing.price)}` : 'Incluso'}
+                </small>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
-      {!children || (Array.isArray(children) && children.length === 0) ? (
-        <p className="drop-hint">Arraste os ingredientes aqui para montar seu burger!</p>
-      ) : null}
     </div>
   );
 }
 
-function BurgerLayer({ ingredient, onRemove }: { ingredient: Ingredient; onRemove: () => void }) {
-  const stackScale = 0.7;
-  const layerWidth = ingredient.width * stackScale;
-  const layerHeight = ingredient.height * stackScale;
+function BurgerStack({ items, lastAddedId }: { items: Ingredient[]; lastAddedId?: string }) {
+  const ordered = useMemo(
+    () => [...items].sort((a, b) => a.order - b.order),
+    [items]
+  );
 
   return (
-    <div
-      className="burger-layer-item"
-      style={{
-        width: layerWidth,
-        height: layerHeight,
-        backgroundImage: `url(${ingredient.sheet})`,
-        backgroundPosition: `-${ingredient.x * stackScale}px -${ingredient.y * stackScale}px`,
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: `${SPRITE_SHEET_SIZE.width * stackScale}px ${SPRITE_SHEET_SIZE.height * stackScale}px`,
-      }}
-      onClick={onRemove}
-      title={`${ingredient.name} - Clique para remover`}
-    >
-      <span className="layer-label">{ingredient.name}</span>
+    <div className="stack-viewport">
+      {ordered
+        .slice()
+        .reverse()
+        .map((ingredient) => (
+          <div
+            key={`${ingredient.id}-${ingredient.order}-${ingredient.x}`}
+            className={`stack-layer ${lastAddedId === ingredient.id ? 'spin-once' : ''}`.trim()}
+          >
+            <SpriteImage
+              sheet={ingredient.sheet}
+              x={ingredient.x}
+              y={ingredient.y}
+              width={ingredient.width}
+              height={ingredient.height}
+              scale={0.5}
+              ariaLabel={ingredient.name}
+            />
+            <span className="stack-label">{ingredient.name}</span>
+          </div>
+        ))}
     </div>
   );
 }
 
 export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Props) {
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<keyof typeof CATEGORIAS>('pao');
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [lastAddedId, setLastAddedId] = useState<string | undefined>();
 
-  const { setNodeRef, isOver } = useDroppable({ id: 'burger-zone' });
-
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,
-        tolerance: 5,
-      },
-    })
+  const totalPrice = useMemo(
+    () => calcularPrecoTotal(selectedIngredients),
+    [selectedIngredients]
   );
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+  const sortedIngredients = useMemo(
+    () =>
+      selectedIngredients
+        .map((id) => getIngredientePorId(id))
+        .filter((ing): ing is Ingredient => !!ing),
+    [selectedIngredients]
+  );
+
+  const startFlow = () => {
+    setHasStarted(true);
+    setActiveCategoryIndex(0);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null);
-
-    if (event.over && event.over.id === 'burger-zone') {
-      const ingredientId = event.active.id as string;
-      // Adiciona o ingrediente à pilha
-      setSelectedIngredients(prev => [...prev, ingredientId]);
-    }
+  const goToNextCategory = () => {
+    setActiveCategoryIndex((prev) => {
+      if (prev === null) return null;
+      if (prev >= CATEGORY_FLOW.length - 1) return null;
+      return prev + 1;
+    });
   };
 
-  const removeIngredient = (index: number) => {
-    setSelectedIngredients(prev => prev.filter((_, i) => i !== index));
+  const handleSelectIngredient = (ingredientId: string) => {
+    setSelectedIngredients((prev) => [...prev, ingredientId]);
+    setLastAddedId(ingredientId);
+    goToNextCategory();
   };
 
-  const clearBurger = () => {
-    setSelectedIngredients([]);
-  };
-
-  const finalizeBurger = () => {
-    if (selectedIngredients.length < 2) {
-      alert('Adicione pelo menos 2 ingredientes!');
+  const handleFinish = () => {
+    if (selectedIngredients.length === 0) {
+      alert('Adicione pelo menos um ingrediente antes de finalizar.');
       return;
     }
-    const preco = calcularPrecoTotal(selectedIngredients);
-    onBurgerComplete(selectedIngredients, preco);
+
+    onBurgerComplete(selectedIngredients, totalPrice);
     setSelectedIngredients([]);
+    setLastAddedId(undefined);
+    setHasStarted(false);
+    setActiveCategoryIndex(null);
   };
 
-  // Ordena ingredientes por ordem de empilhamento
-  const sortedIngredients = selectedIngredients
-    .map(id => getIngredientePorId(id))
-    .filter((ing): ing is Ingredient => ing !== undefined)
-    .sort((a, b) => a.order - b.order);
+  const clearAll = () => {
+    setSelectedIngredients([]);
+    setLastAddedId(undefined);
+  };
 
-  const totalPrice = calcularPrecoTotal(selectedIngredients);
+  const handleOpenNext = () => {
+    if (activeCategoryIndex === null) {
+      setActiveCategoryIndex(0);
+      return;
+    }
+    goToNextCategory();
+  };
 
-  // Filtra ingredientes por categoria selecionada
-  const ingredientsByCategory = ingredients.filter(
-    ing => ing.category === activeCategory
-  );
-
-  const activeIngredient = activeId ? getIngredientePorId(activeId) : null;
+  const activeCategory =
+    activeCategoryIndex !== null ? CATEGORY_FLOW[activeCategoryIndex] : null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="burger-builder">
-        {/* Painel de Categorias */}
-        <div className="categories-tabs">
-          {Object.entries(CATEGORIAS).map(([key, value]) => (
+    <div className="flow-shell">
+      <section className="hero-card">
+        <div>
+          <p className="eyebrow">Boas-vindas</p>
+          <h2>Olá, tudo bem?</h2>
+          <p className="step-subtitle">
+            Monte seu hambúrguer peça por peça e veja o resultado ganhar vida.
+          </p>
+        </div>
+        <button className="btn primary" onClick={startFlow}>
+          Monte seu hambúrguer!
+        </button>
+      </section>
+
+      <section className="builder-live-area">
+        <div className="builder-preview">
+          <header className="builder-preview__header">
+            <div>
+              <p className="eyebrow">Hambúrguer em construção</p>
+              <h3>Camadas em tempo real</h3>
+            </div>
+            <div className="price-pill">{currencyFormat(totalPrice)}</div>
+          </header>
+
+          <BurgerStack items={sortedIngredients} lastAddedId={lastAddedId} />
+
+          <div className="preview-actions">
             <button
-              key={key}
-              className={`category-tab ${activeCategory === key ? 'active' : ''}`}
-              onClick={() => setActiveCategory(key as keyof typeof CATEGORIAS)}
-              style={{ borderBottomColor: activeCategory === key ? value.cor : 'transparent' }}
+              className="btn ghost small"
+              onClick={clearAll}
+              disabled={selectedIngredients.length === 0}
             >
-              {value.label}
+              Limpar tudo
             </button>
-          ))}
-        </div>
-
-        {/* Grade de Ingredientes Arrastáveis */}
-        <div className="ingredients-grid">
-          {ingredientsByCategory.map(ingredient => (
-            <DraggableIngredient
-              key={ingredient.id}
-              ingredient={ingredient}
-              currencyFormat={currencyFormat}
-            />
-          ))}
-        </div>
-
-        {/* Área de Montagem */}
-        <div className="builder-section">
-          <h3>Seu Burger</h3>
-          <div ref={setNodeRef}>
-            <DropZone isOver={isOver}>
-              {sortedIngredients.map((ingredient, index) => (
-                <BurgerLayer
-                  key={`${ingredient.id}-${index}`}
-                  ingredient={ingredient}
-                  onRemove={() => removeIngredient(
-                    selectedIngredients.findIndex((id, i) =>
-                      getIngredientePorId(id)?.id === ingredient.id &&
-                      selectedIngredients.slice(0, i).filter(prevId =>
-                        getIngredientePorId(prevId)?.id === ingredient.id
-                      ).length === sortedIngredients.slice(0, index).filter(
-                        prev => prev.id === ingredient.id
-                      ).length
-                    )
-                  )}
-                />
-              ))}
-            </DropZone>
-          </div>
-
-          {/* Resumo e Ações */}
-          <div className="builder-summary">
-            <div className="summary-price">
-              <span>Total:</span>
-              <strong>{currencyFormat(totalPrice)}</strong>
-            </div>
-            <div className="builder-actions">
-              <button
-                className="btn ghost small"
-                onClick={clearBurger}
-                disabled={selectedIngredients.length === 0}
-              >
-                Limpar
-              </button>
-              <button
-                className="btn primary"
-                onClick={finalizeBurger}
-                disabled={selectedIngredients.length < 2}
-              >
-                Adicionar à Sacola
-              </button>
-            </div>
+            <button
+              className="btn primary"
+              onClick={handleFinish}
+              disabled={selectedIngredients.length === 0}
+            >
+              Adicionar à sacola
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Overlay durante arraste */}
-      <DragOverlay>
-        {activeIngredient ? (
-          <div
-            className="ingredient-card dragging"
-            style={{
-              width: activeIngredient.width * 0.45,
-              background: 'transparent',
-            }}
-          >
-            <div
-              className="ingredient-sprite"
-              style={{
-                width: activeIngredient.width * 0.45,
-                height: activeIngredient.height * 0.45,
-                backgroundImage: `url(${activeIngredient.sheet})`,
-                backgroundPosition: `-${activeIngredient.x * 0.45}px -${activeIngredient.y * 0.45}px`,
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: `${SPRITE_SHEET_SIZE.width * 0.45}px ${SPRITE_SHEET_SIZE.height * 0.45}px`,
-              }}
-            />
-            <div className="ingredient-info">
-              <span className="ingredient-name">{activeIngredient.name}</span>
-            </div>
+        <div className="builder-flow">
+          <header className="builder-flow__header">
+            <p className="eyebrow">Passo a passo</p>
+            <h3>Escolha por categoria</h3>
+            <p className="step-subtitle">
+              Cada toque abre um modal com o catálogo real recortado das sprites.
+            </p>
+          </header>
+
+          <div className="category-list">
+            {CATEGORY_FLOW.map((category, index) => {
+              const isActive = activeCategoryIndex === index;
+              const hasSelection = selectedIngredients.some(
+                (id) => getIngredientePorId(id)?.category === category
+              );
+
+              return (
+                <button
+                  key={category}
+                  className={`category-row ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setHasStarted(true);
+                    setActiveCategoryIndex(index);
+                  }}
+                >
+                  <div className="category-dot" style={{ backgroundColor: CATEGORIAS[category].cor }} />
+                  <div className="category-copy">
+                    <strong>{CATEGORIAS[category].label}</strong>
+                    <span className="step-subtitle">
+                      {hasSelection ? 'Selecionado' : 'Toque para abrir'}
+                    </span>
+                  </div>
+                  <span className="category-chevron">→</span>
+                </button>
+              );
+            })}
           </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+
+          <div className="flow-footer">
+            <button
+              className="btn ghost small"
+              onClick={handleOpenNext}
+              disabled={!hasStarted}
+            >
+              Próxima categoria
+            </button>
+            <button
+              className="btn secondary"
+              onClick={handleFinish}
+              disabled={selectedIngredients.length === 0}
+            >
+              Finalizar montagem
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {activeCategory && (
+        <CategoryModal
+          isOpen={activeCategoryIndex !== null}
+          category={activeCategory}
+          onClose={goToNextCategory}
+          onSelect={handleSelectIngredient}
+          currencyFormat={currencyFormat}
+        />
+      )}
+    </div>
   );
 }
