@@ -3,53 +3,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model StatusPedido {
-  id     Int     @id @default(autoincrement())
-  nome   String
-  pedidos Pedido[]
-}
-
 model Pedido {
-  id           Int           @id @default(autoincrement())
-  codigo       String        @unique
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  status       StatusPedido  @relation(fields: [statusId], references: [id])
-  statusId     Int
-  itens        ItemPedido[]
-  endereco     Endereco?
-  entrega      Entrega?
-  total        Decimal       @db.Decimal(10, 2)
-  pagamentoRef String?
-}
-
-model ItemPedido {
-  id        Int    @id @default(autoincrement())
-  pedido    Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  pedidoId  Int
-  nome      String
-  camadas   Json
-  preco     Decimal @db.Decimal(10, 2)
-}
-
-model Endereco {
-  id         Int     @id @default(autoincrement())
-  pedido     Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  pedidoId   Int     @unique
-  nome       String
-  celular    String
-  rua        String
-  bairro     String
-  complemento String?
-  referencia  String?
-  tipoEntrega String
-}
-
-model Entrega {
-  id        Int      @id @default(autoincrement())
-  pedido    Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  pedidoId  Int      @unique
-  latitude  Float?
-  longitude Float?
-  atualizadoEm DateTime? @updatedAt
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  status       String
+  nome         String
+  celular      String
+  endereco     String
+  tipoEntrega  String
+  total        Float
+  itens        Json
 }

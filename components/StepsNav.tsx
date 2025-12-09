@@ -1,4 +1,6 @@
-import { useOrder } from '../context/OrderContext';
+"use client";
+
+import { useOrder } from '@/context/OrderContext';
 
 export default function StepsNav() {
   const { steps, currentStepIndex, setCurrentStepIndex } = useOrder();

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
@@ -16,8 +17,12 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "22.19.2",
+    "@types/react": "18.3.27",
+    "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
-    "prisma": "^5.17.0"
+    "prisma": "^5.17.0",
+    "typescript": "^5.5.4"
   }
 }
