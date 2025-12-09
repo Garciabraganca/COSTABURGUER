@@ -1,4 +1,6 @@
-import { useOrder } from '../context/OrderContext';
+"use client";
+
+import { useOrder } from '@/context/OrderContext';
 
 export default function OptionsList() {
   const { steps, currentStepIndex, options, selections, selectOption, currencyFormat } = useOrder();
