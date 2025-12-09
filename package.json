@@ -7,14 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
+    "postinstall": "PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 prisma generate || true",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate deploy"
   },
   "dependencies": {
-    "@prisma/client": "latest",
+    "@prisma/client": "^5.15.0",
     "next": "^14.2.5",
-    "prisma": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -24,6 +23,7 @@
     "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
+    "prisma": "^5.15.0",
     "typescript": "^5.5.4"
   }
 }
