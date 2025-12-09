@@ -1,92 +1,54 @@
 "use client";
 
-import { useState } from 'react';
-import BurgerPreview from '@/components/BurgerPreview';
+import BurgerBuilder from '@/components/BurgerBuilder';
 import ExtrasChips from '@/components/ExtrasChips';
-import OptionsList from '@/components/OptionsList';
-import StepsNav from '@/components/StepsNav';
 import SummaryBox from '@/components/SummaryBox';
 import { useOrder } from '@/context/OrderContext';
 import Link from 'next/link';
 
 export default function MontarPage() {
   const {
-    steps,
-    currentStepIndex,
-    setCurrentStepIndex,
-    partialTotal,
-    addCurrentBurgerToCart,
+    addCustomBurgerToCart,
     currencyFormat,
-    selections,
+    cart,
   } = useOrder();
-  const step = steps[currentStepIndex];
-  const [error, setError] = useState<string | null>(null);
+
+  const handleBurgerComplete = (ingredientes: string[], preco: number) => {
+    addCustomBurgerToCart(ingredientes, preco);
+  };
 
   return (
-    <div>
-      <StepsNav />
-      <header className="step-header">
-        <div>
-          <h2>{step.label}</h2>
-          <p className="step-subtitle">{step.subtitle}</p>
-        </div>
-        <div className="partial">Parcial: {currencyFormat(partialTotal)}</div>
+    <div className="montar-page">
+      <header className="builder-header">
+        <h2>Monte seu Burger</h2>
+        <p className="step-subtitle">Arraste os ingredientes para criar seu hambúrguer perfeito!</p>
       </header>
 
-      <OptionsList />
+      <BurgerBuilder
+        onBurgerComplete={handleBurgerComplete}
+        currencyFormat={currencyFormat}
+      />
 
-      <section className="preview-section">
-        <h3>Pré-visualização</h3>
-        <BurgerPreview />
-      </section>
-
-      <section>
+      <section className="extras-section">
         <h3>Quer um combo?</h3>
         <p className="step-subtitle">Adicione batata, refri e sobremesa.</p>
         <ExtrasChips />
       </section>
 
-      <section>
+      <section className="summary-section">
         <h3>Resumo rápido</h3>
         <SummaryBox />
       </section>
 
-      {error && <p className="error-text">{error}</p>}
-
       <div className="navigation-row">
-        <button
-          className="btn ghost"
-          onClick={() => setCurrentStepIndex(Math.max(currentStepIndex - 1, 0))}
-          disabled={currentStepIndex === 0}
-        >
+        <Link href="/" className="btn ghost">
           Voltar
-        </button>
-        <button
-          className="btn primary"
-          onClick={() => {
-            setError(null);
-            if (currentStepIndex < steps.length - 1) {
-              if (!selections[step.id]) {
-                setError('Selecione uma opção para seguir.');
-                return;
-              }
-              setCurrentStepIndex(currentStepIndex + 1);
-              return;
-            }
-            try {
-              addCurrentBurgerToCart();
-            } catch (err) {
-              setError((err as Error).message);
-            }
-          }}
+        </Link>
+        <Link
+          href="/sacola"
+          className={`btn primary ${cart.length === 0 ? 'disabled' : ''}`}
         >
-          {currentStepIndex < steps.length - 1 ? 'Salvar camada e seguir' : 'Adicionar à sacola'}
-        </button>
-      </div>
-
-      <div className="secondary-action">
-        <Link href="/sacola" className="btn ghost">
-          Ir para sacola
+          Ir para Sacola ({cart.length})
         </Link>
       </div>
     </div>
