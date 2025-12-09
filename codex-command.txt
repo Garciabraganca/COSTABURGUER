@@ -1,0 +1,41 @@
+Você é um assistente de código (tipo GitHub Copilot / Codex).
+Tenho um MVP estático da hamburgueria COSTA-BURGER dentro desta pasta, com:
+
+- index.html (SPA simples)
+- css/styles.css (tema kraft, vermelho artesanal, estilo de hamburgueria de praia)
+- js/app.js (lógica de front-end: telas, montagem de burger em camadas, sacola, entrega, pagamento simulado, rastreamento simulado)
+- img/logo-kraft.svg (logo ilustrativa)
+
+Quero que você evolua este código para um projeto **full-stack** com as seguintes características:
+
+1. Converter para **Next.js** (versão estável atual), mantendo o mesmo layout e tema visual.
+   - Criar páginas estruturadas: `/`, `/montar`, `/sacola`, `/entrega`, `/pagamento`, `/pedido/[id]`.
+   - Componentizar o layout (Header, Footer, BurgerPreview, StepsNav, Cart, etc.).
+
+2. Criar um backend em **Node/NestJS** ou API Routes do próprio Next com:
+   - Modelos de `Pedido`, `ItemPedido`, `Endereco`, `StatusPedido`.
+   - Rotas REST ou handlers para:
+     - Criar pedido
+     - Atualizar status
+     - Listar pedidos do dia
+   - Persistência em banco (PostgreSQL) com ORM (Prisma).
+
+3. Integrar **Mercado Pago**:
+   - Endpoint para criar preferências de pagamento.
+   - Webhook para receber `payment approved` e atualizar o status do pedido para "confirmado".
+
+4. Preparar base para **localização em tempo real**:
+   - Modelo para `Entrega` com posição (lat, lng).
+   - Endpoint para o motoboy atualizar a posição.
+   - Stream em tempo real para o cliente (WebSocket ou solução como Supabase Realtime).
+
+5. Preparar pontos de integração com **WhatsApp** para futuramente:
+   - Enviar confirmação de pedido.
+   - Enviar link de rastreamento.
+   - Rodar campanhas de remarketing (gatilhos D+1, D+3, carrinho abandonado).
+
+Mantenha o espírito do design original (tema kraft artesanal) e preserve o fluxo:
+
+Anúncio → Home → Montar em camadas → Sacola → Entrega → Pagamento → Rastreamento.
+
+Otimize o código, separe em arquivos e explique nos comentários pontos importantes para outro dev dar manutenção depois.
