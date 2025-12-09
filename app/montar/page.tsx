@@ -19,11 +19,6 @@ export default function MontarPage() {
 
   return (
     <div className="montar-page">
-      <header className="builder-header">
-        <h2>Monte seu Burger</h2>
-        <p className="step-subtitle">Arraste os ingredientes para criar seu hambúrguer perfeito!</p>
-      </header>
-
       <BurgerBuilder
         onBurgerComplete={handleBurgerComplete}
         currencyFormat={currencyFormat}

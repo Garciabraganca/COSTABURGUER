@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import SpriteImage from './SpriteImage';
 import {
   Ingredient,
@@ -20,6 +20,16 @@ const CATEGORY_FLOW: IngredientCategory[] = [
   'extra',
   'especial',
 ];
+
+const CATEGORY_ICONS: Record<IngredientCategory, string> = {
+  pao: '🍞',
+  carne: '🥩',
+  queijo: '🧀',
+  molho: '🥫',
+  vegetal: '🥬',
+  extra: '🥓',
+  especial: '✨',
+};
 
 type Props = {
   onBurgerComplete: (ingredientes: string[], preco: number) => void;
@@ -41,39 +51,44 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: 
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal-card">
-        <div className="modal-header">
-          <div>
-            <p className="eyebrow">Categoria</p>
-            <h3>{CATEGORIAS[category].label}</h3>
-            <p className="step-subtitle">Escolha um ingrediente para continuar</p>
+      <div className="modal-card modal-card-premium">
+        <div className="modal-header-premium">
+          <div className="modal-title-area">
+            <span className="category-icon-large">{CATEGORY_ICONS[category]}</span>
+            <div>
+              <p className="eyebrow-gold">Selecione seu ingrediente</p>
+              <h3 className="modal-title">{CATEGORIAS[category].label}</h3>
+            </div>
           </div>
-          <button className="btn ghost small" onClick={onClose} aria-label="Fechar modal">
-            Pular etapa
+          <button className="btn-skip" onClick={onClose}>
+            Pular <span className="skip-arrow">→</span>
           </button>
         </div>
 
-        <div className="modal-grid">
+        <div className="modal-grid-premium">
           {ingredientes.map((ing) => (
             <button
               key={ing.id}
-              className="modal-ingredient-card"
+              className="ingredient-card-premium"
               onClick={() => onSelect(ing.id)}
             >
-              <SpriteImage
-                sheet={ing.sheet}
-                x={ing.x}
-                y={ing.y}
-                width={ing.width}
-                height={ing.height}
-                scale={0.42}
-                ariaLabel={ing.name}
-              />
-              <div className="modal-ingredient-info">
-                <span>{ing.name}</span>
-                <small>
+              <div className="ingredient-image-wrapper">
+                <div className="ingredient-glow"></div>
+                <SpriteImage
+                  sheet={ing.sheet}
+                  x={ing.x}
+                  y={ing.y}
+                  width={ing.width}
+                  height={ing.height}
+                  scale={0.5}
+                  ariaLabel={ing.name}
+                />
+              </div>
+              <div className="ingredient-details">
+                <span className="ingredient-name-premium">{ing.name}</span>
+                <span className={`ingredient-price-tag ${ing.price === 0 ? 'free' : ''}`}>
                   {ing.price > 0 ? `+ ${currencyFormat(ing.price)}` : 'Incluso'}
-                </small>
+                </span>
               </div>
             </button>
           ))}
@@ -83,34 +98,107 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: 
   );
 }
 
-function BurgerStack({ items, lastAddedId }: { items: Ingredient[]; lastAddedId?: string }) {
+function Burger3DPreview({ items, isSpinning }: { items: Ingredient[]; isSpinning: boolean }) {
   const ordered = useMemo(
     () => [...items].sort((a, b) => a.order - b.order),
     [items]
   );
 
+  // Calculate layer positions for stacking effect
+  const getLayerStyle = (index: number, total: number) => {
+    const baseBottom = 10;
+    const layerHeight = total > 1 ? Math.min(45, 180 / total) : 50;
+    return {
+      bottom: `${baseBottom + index * layerHeight}px`,
+      zIndex: index + 1,
+      animationDelay: `${index * 0.1}s`,
+    };
+  };
+
   return (
-    <div className="stack-viewport">
-      {ordered
-        .slice()
-        .reverse()
-        .map((ingredient) => (
-          <div
-            key={`${ingredient.id}-${ingredient.order}-${ingredient.x}`}
-            className={`stack-layer ${lastAddedId === ingredient.id ? 'spin-once' : ''}`.trim()}
+    <div className={`burger-3d-container ${isSpinning ? 'spinning' : ''}`}>
+      <div className="burger-platform">
+        <div className="platform-shadow"></div>
+      </div>
+
+      <div className="burger-3d-wrapper">
+        <div className="burger-3d">
+          {ordered.length === 0 ? (
+            <div className="empty-burger-hint">
+              <div className="hint-icon">🍔</div>
+              <p>Seu hambúrguer aparecerá aqui</p>
+              <span>Selecione os ingredientes para começar</span>
+            </div>
+          ) : (
+            ordered.map((ingredient, index) => (
+              <div
+                key={`${ingredient.id}-${index}`}
+                className="burger-3d-layer"
+                style={getLayerStyle(index, ordered.length)}
+              >
+                <div className="layer-content">
+                  <SpriteImage
+                    sheet={ingredient.sheet}
+                    x={ingredient.x}
+                    y={ingredient.y}
+                    width={ingredient.width}
+                    height={ingredient.height}
+                    scale={0.65}
+                    ariaLabel={ingredient.name}
+                  />
+                </div>
+                <div className="layer-shadow"></div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <div className="burger-particles">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="particle" style={{ '--delay': `${i * 0.3}s` } as React.CSSProperties}></div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IngredientsList({
+  selectedIds,
+  onRemove
+}: {
+  selectedIds: string[];
+  onRemove: (index: number) => void;
+}) {
+  const ingredients = selectedIds
+    .map(id => getIngredientePorId(id))
+    .filter((ing): ing is Ingredient => !!ing);
+
+  if (ingredients.length === 0) {
+    return (
+      <div className="ingredients-list-empty">
+        <span>Nenhum ingrediente adicionado</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ingredients-list">
+      {ingredients.map((ing, index) => (
+        <div key={`${ing.id}-${index}`} className="ingredient-chip">
+          <span className="chip-icon">{CATEGORY_ICONS[ing.category]}</span>
+          <span className="chip-name">{ing.name}</span>
+          <button
+            className="chip-remove"
+            onClick={() => onRemove(index)}
+            aria-label={`Remover ${ing.name}`}
           >
-            <SpriteImage
-              sheet={ingredient.sheet}
-              x={ingredient.x}
-              y={ingredient.y}
-              width={ingredient.width}
-              height={ingredient.height}
-              scale={0.5}
-              ariaLabel={ingredient.name}
-            />
-            <span className="stack-label">{ingredient.name}</span>
-          </div>
-        ))}
+            ×
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -119,7 +207,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
-  const [lastAddedId, setLastAddedId] = useState<string | undefined>();
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const totalPrice = useMemo(
     () => calcularPrecoTotal(selectedIngredients),
@@ -133,6 +221,15 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         .filter((ing): ing is Ingredient => !!ing),
     [selectedIngredients]
   );
+
+  // Animate on ingredient add
+  useEffect(() => {
+    if (selectedIngredients.length > 0) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedIngredients.length]);
 
   const startFlow = () => {
     setHasStarted(true);
@@ -149,8 +246,11 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
   const handleSelectIngredient = (ingredientId: string) => {
     setSelectedIngredients((prev) => [...prev, ingredientId]);
-    setLastAddedId(ingredientId);
     goToNextCategory();
+  };
+
+  const handleRemoveIngredient = (index: number) => {
+    setSelectedIngredients(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleFinish = () => {
@@ -161,129 +261,140 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
     onBurgerComplete(selectedIngredients, totalPrice);
     setSelectedIngredients([]);
-    setLastAddedId(undefined);
     setHasStarted(false);
     setActiveCategoryIndex(null);
   };
 
   const clearAll = () => {
     setSelectedIngredients([]);
-    setLastAddedId(undefined);
-  };
-
-  const handleOpenNext = () => {
-    if (activeCategoryIndex === null) {
-      setActiveCategoryIndex(0);
-      return;
-    }
-    goToNextCategory();
   };
 
   const activeCategory =
     activeCategoryIndex !== null ? CATEGORY_FLOW[activeCategoryIndex] : null;
 
   return (
-    <div className="flow-shell">
-      <section className="hero-card">
-        <div>
-          <p className="eyebrow">Boas-vindas</p>
-          <h2>Olá, tudo bem?</h2>
-          <p className="step-subtitle">
-            Monte seu hambúrguer peça por peça e veja o resultado ganhar vida.
+    <div className="builder-premium">
+      {/* Hero Section */}
+      <section className="builder-hero">
+        <div className="hero-content">
+          <div className="hero-badge">Monte do seu jeito</div>
+          <h1 className="hero-title">Crie seu Hambúrguer</h1>
+          <p className="hero-subtitle">
+            Escolha cada ingrediente e veja seu hambúrguer ganhar vida em tempo real
           </p>
+          {!hasStarted && (
+            <button className="btn-start-building" onClick={startFlow}>
+              <span className="btn-icon">🍔</span>
+              Começar a Montar
+              <span className="btn-shine"></span>
+            </button>
+          )}
         </div>
-        <button className="btn primary" onClick={startFlow}>
-          Monte seu hambúrguer!
-        </button>
+        <div className="hero-decoration">
+          <div className="deco-circle circle-1"></div>
+          <div className="deco-circle circle-2"></div>
+          <div className="deco-circle circle-3"></div>
+        </div>
       </section>
 
-      <section className="builder-live-area">
-        <div className="builder-preview">
-          <header className="builder-preview__header">
-            <div>
-              <p className="eyebrow">Hambúrguer em construção</p>
-              <h3>Camadas em tempo real</h3>
+      {/* Main Builder Area */}
+      <section className="builder-main">
+        {/* 3D Burger Preview */}
+        <div className="preview-panel">
+          <div className="preview-header">
+            <div className="preview-title">
+              <span className="preview-icon">👀</span>
+              <span>Visualização em Tempo Real</span>
             </div>
-            <div className="price-pill">{currencyFormat(totalPrice)}</div>
-          </header>
+            <div className="price-display">
+              <span className="price-label">Total</span>
+              <span className="price-value">{currencyFormat(totalPrice)}</span>
+            </div>
+          </div>
 
-          <BurgerStack items={sortedIngredients} lastAddedId={lastAddedId} />
+          <Burger3DPreview
+            items={sortedIngredients}
+            isSpinning={sortedIngredients.length > 0}
+          />
+
+          <div className="preview-ingredients">
+            <IngredientsList
+              selectedIds={selectedIngredients}
+              onRemove={handleRemoveIngredient}
+            />
+          </div>
 
           <div className="preview-actions">
             <button
-              className="btn ghost small"
+              className="btn-ghost"
               onClick={clearAll}
               disabled={selectedIngredients.length === 0}
             >
-              Limpar tudo
+              Limpar Tudo
             </button>
             <button
-              className="btn primary"
+              className="btn-primary-premium"
               onClick={handleFinish}
               disabled={selectedIngredients.length === 0}
             >
-              Adicionar à sacola
+              <span>Adicionar à Sacola</span>
+              <span className="btn-arrow">→</span>
             </button>
           </div>
         </div>
 
-        <div className="builder-flow">
-          <header className="builder-flow__header">
-            <p className="eyebrow">Passo a passo</p>
-            <h3>Escolha por categoria</h3>
-            <p className="step-subtitle">
-              Cada toque abre um modal com o catálogo real recortado das sprites.
-            </p>
-          </header>
+        {/* Category Selection */}
+        <div className="categories-panel">
+          <div className="categories-header">
+            <h2>Escolha os Ingredientes</h2>
+            <p>Toque em uma categoria para adicionar</p>
+          </div>
 
-          <div className="category-list">
+          <div className="categories-grid">
             {CATEGORY_FLOW.map((category, index) => {
               const isActive = activeCategoryIndex === index;
-              const hasSelection = selectedIngredients.some(
+              const count = selectedIngredients.filter(
                 (id) => getIngredientePorId(id)?.category === category
-              );
+              ).length;
 
               return (
                 <button
                   key={category}
-                  className={`category-row ${isActive ? 'active' : ''}`}
+                  className={`category-card ${isActive ? 'active' : ''} ${count > 0 ? 'has-items' : ''}`}
                   onClick={() => {
                     setHasStarted(true);
                     setActiveCategoryIndex(index);
                   }}
+                  style={{ '--category-color': CATEGORIAS[category].cor } as React.CSSProperties}
                 >
-                  <div className="category-dot" style={{ backgroundColor: CATEGORIAS[category].cor }} />
-                  <div className="category-copy">
-                    <strong>{CATEGORIAS[category].label}</strong>
-                    <span className="step-subtitle">
-                      {hasSelection ? 'Selecionado' : 'Toque para abrir'}
-                    </span>
+                  <div className="category-icon">{CATEGORY_ICONS[category]}</div>
+                  <div className="category-info">
+                    <span className="category-name">{CATEGORIAS[category].label}</span>
+                    {count > 0 && (
+                      <span className="category-count">{count} item{count > 1 ? 's' : ''}</span>
+                    )}
                   </div>
-                  <span className="category-chevron">→</span>
+                  <div className="category-indicator">
+                    {count > 0 ? '✓' : '+'}
+                  </div>
                 </button>
               );
             })}
           </div>
 
-          <div className="flow-footer">
+          <div className="categories-footer">
             <button
-              className="btn ghost small"
-              onClick={handleOpenNext}
-              disabled={!hasStarted}
-            >
-              Próxima categoria
-            </button>
-            <button
-              className="btn secondary"
+              className="btn-secondary"
               onClick={handleFinish}
               disabled={selectedIngredients.length === 0}
             >
-              Finalizar montagem
+              Finalizar Montagem
             </button>
           </div>
         </div>
       </section>
 
+      {/* Modal */}
       {activeCategory && (
         <CategoryModal
           isOpen={activeCategoryIndex !== null}
