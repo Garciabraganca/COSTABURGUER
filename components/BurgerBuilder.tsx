@@ -15,7 +15,8 @@ import {
 import DraggableIngredient from './DraggableIngredient';
 import {
   Ingredient,
-  INGREDIENTES,
+  SPRITE_SHEET_SIZE,
+  ingredients,
   CATEGORIAS,
   getIngredientePorId,
   calcularPrecoTotal,
@@ -40,17 +41,25 @@ function DropZone({ children, isOver }: { children: React.ReactNode; isOver: boo
 }
 
 function BurgerLayer({ ingredient, onRemove }: { ingredient: Ingredient; onRemove: () => void }) {
+  const stackScale = 0.7;
+  const layerWidth = ingredient.width * stackScale;
+  const layerHeight = ingredient.height * stackScale;
+
   return (
     <div
       className="burger-layer-item"
       style={{
-        backgroundColor: ingredient.cor,
-        height: `${ingredient.altura}px`,
+        width: layerWidth,
+        height: layerHeight,
+        backgroundImage: `url(${ingredient.sheet})`,
+        backgroundPosition: `-${ingredient.x * stackScale}px -${ingredient.y * stackScale}px`,
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: `${SPRITE_SHEET_SIZE.width * stackScale}px ${SPRITE_SHEET_SIZE.height * stackScale}px`,
       }}
       onClick={onRemove}
-      title={`${ingredient.nome} - Clique para remover`}
+      title={`${ingredient.name} - Clique para remover`}
     >
-      <span className="layer-label">{ingredient.nome}</span>
+      <span className="layer-label">{ingredient.name}</span>
     </div>
   );
 }
@@ -112,13 +121,13 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const sortedIngredients = selectedIngredients
     .map(id => getIngredientePorId(id))
     .filter((ing): ing is Ingredient => ing !== undefined)
-    .sort((a, b) => a.ordem - b.ordem);
+    .sort((a, b) => a.order - b.order);
 
   const totalPrice = calcularPrecoTotal(selectedIngredients);
 
   // Filtra ingredientes por categoria selecionada
-  const ingredientsByCategory = INGREDIENTES.filter(
-    ing => ing.categoria === activeCategory
+  const ingredientsByCategory = ingredients.filter(
+    ing => ing.category === activeCategory
   );
 
   const activeIngredient = activeId ? getIngredientePorId(activeId) : null;
@@ -210,10 +219,24 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         {activeIngredient ? (
           <div
             className="ingredient-card dragging"
-            style={{ backgroundColor: activeIngredient.cor }}
+            style={{
+              width: activeIngredient.width * 0.45,
+              background: 'transparent',
+            }}
           >
+            <div
+              className="ingredient-sprite"
+              style={{
+                width: activeIngredient.width * 0.45,
+                height: activeIngredient.height * 0.45,
+                backgroundImage: `url(${activeIngredient.sheet})`,
+                backgroundPosition: `-${activeIngredient.x * 0.45}px -${activeIngredient.y * 0.45}px`,
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: `${SPRITE_SHEET_SIZE.width * 0.45}px ${SPRITE_SHEET_SIZE.height * 0.45}px`,
+              }}
+            />
             <div className="ingredient-info">
-              <span className="ingredient-name">{activeIngredient.nome}</span>
+              <span className="ingredient-name">{activeIngredient.name}</span>
             </div>
           </div>
         ) : null}
