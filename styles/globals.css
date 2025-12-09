@@ -429,3 +429,24 @@ body {
 .nav-item.active {
   background: rgba(0,0,0,0.08);
 }
+
+.page-shell {
+  min-height: 100vh;
+}
+
+.app-footer a.nav-item {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+}
+
+.nav-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.cart-item-desc {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
