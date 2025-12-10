@@ -11,12 +11,25 @@ export const VAPID_KEYS = {
   subject: process.env.VAPID_SUBJECT || 'mailto:contato@costaburguer.com.br',
 };
 
-// Configura VAPID
-webpush.setVapidDetails(
-  VAPID_KEYS.subject,
-  VAPID_KEYS.publicKey,
-  VAPID_KEYS.privateKey
-);
+// Flag para garantir que VAPID seja configurado apenas uma vez
+let vapidConfigured = false;
+
+// Configura VAPID de forma lazy (apenas quando necessário)
+function ensureVapidConfigured() {
+  if (vapidConfigured) return;
+
+  try {
+    webpush.setVapidDetails(
+      VAPID_KEYS.subject,
+      VAPID_KEYS.publicKey,
+      VAPID_KEYS.privateKey
+    );
+    vapidConfigured = true;
+  } catch (error) {
+    console.error('[WebPush] Erro ao configurar VAPID:', error);
+    throw error;
+  }
+}
 
 export interface PushPayload {
   title: string;
@@ -50,6 +63,9 @@ export async function sendPushNotification(
   payload: PushPayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Garante que VAPID está configurado antes de enviar
+    ensureVapidConfigured();
+
     console.log('[WebPush] Enviando notificação:');
     console.log('  To:', subscription.endpoint.slice(-30));
     console.log('  Title:', payload.title);
