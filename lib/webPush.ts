@@ -1,14 +1,22 @@
 // Configuração do Web Push
 // Para gerar novas chaves VAPID, execute: npx web-push generate-vapid-keys
+import webpush from 'web-push';
 
 // IMPORTANTE: Em produção, armazene essas chaves em variáveis de ambiente
 export const VAPID_KEYS = {
   publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-    'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U',
+    'BJrcdSSyFlgTjLjlYWH60c2Fm_GY986uc2VNlEVjYA_67uMCpMhVism89AQUMydKJsbnV3zphf-5W1RwgxT84nw',
   privateKey: process.env.VAPID_PRIVATE_KEY ||
-    'UUxI4O8-FbRouAf7-fGzM9R1Clt-oFB4xvy8xc9FgTo',
-  subject: process.env.VAPID_SUBJECT || 'mailto:contato@costaburger.com',
+    'XihUxbBWlJhgaj-zs1Ul0lPnbvZejaIhgnIj9XhvmgU',
+  subject: process.env.VAPID_SUBJECT || 'mailto:contato@costaburguer.com.br',
 };
+
+// Configura VAPID
+webpush.setVapidDetails(
+  VAPID_KEYS.subject,
+  VAPID_KEYS.publicKey,
+  VAPID_KEYS.privateKey
+);
 
 export interface PushPayload {
   title: string;
@@ -37,51 +45,26 @@ export interface PushSubscriptionData {
 }
 
 // Função para enviar push notification
-// Em desenvolvimento: simula o envio e loga no console
-// Em produção: instale web-push (npm install web-push) para envio real
 export async function sendPushNotification(
   subscription: PushSubscriptionData,
   payload: PushPayload
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Log da notificação (funciona em dev e prod)
-    console.log('[WebPush] Push notification:');
+    console.log('[WebPush] Enviando notificação:');
     console.log('  To:', subscription.endpoint.slice(-30));
     console.log('  Title:', payload.title);
-    console.log('  Body:', payload.body);
 
-    // Simula delay de rede
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await webpush.sendNotification(
+      { endpoint: subscription.endpoint, keys: subscription.keys },
+      JSON.stringify(payload),
+      { TTL: 86400, urgency: 'high' }
+    );
 
-    // PRODUÇÃO: Para habilitar push real, siga os passos:
-    // 1. npm install web-push
-    // 2. Crie um arquivo lib/webPushSender.ts com o código abaixo
-    // 3. Importe e use aqui
-    //
-    // Código para lib/webPushSender.ts:
-    // ```
-    // import webpush from 'web-push';
-    // import { VAPID_KEYS, PushSubscriptionData, PushPayload } from './webPush';
-    //
-    // webpush.setVapidDetails(
-    //   VAPID_KEYS.subject,
-    //   VAPID_KEYS.publicKey,
-    //   VAPID_KEYS.privateKey
-    // );
-    //
-    // export async function sendRealPush(sub: PushSubscriptionData, payload: PushPayload) {
-    //   return webpush.sendNotification(
-    //     { endpoint: sub.endpoint, keys: sub.keys },
-    //     JSON.stringify(payload),
-    //     { TTL: 86400, urgency: 'high' }
-    //   );
-    // }
-    // ```
-
+    console.log('[WebPush] Notificação enviada com sucesso!');
     return { success: true };
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
-    console.error('[WebPush] Error sending notification:', err);
+    console.error('[WebPush] Erro ao enviar notificação:', err);
 
     // Se a subscription expirou ou é inválida
     if (err.statusCode === 410 || err.statusCode === 404) {
