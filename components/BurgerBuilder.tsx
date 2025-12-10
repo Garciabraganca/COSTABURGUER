@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
-import SpriteImage from './SpriteImage';
+import Image from 'next/image';
+import IngredientImage from './IngredientImage';
 import {
   Ingredient,
   IngredientCategory,
   CATEGORIAS,
+  HAMBURGER_BASE_IMAGE,
   getIngredientePorId,
   getIngredientesPorCategoria,
   calcularPrecoTotal,
@@ -74,14 +76,10 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: 
             >
               <div className="ingredient-image-wrapper">
                 <div className="ingredient-glow"></div>
-                <SpriteImage
-                  sheet={ing.sheet}
-                  x={ing.x}
-                  y={ing.y}
-                  width={ing.width}
-                  height={ing.height}
-                  scale={0.5}
-                  ariaLabel={ing.name}
+                <IngredientImage
+                  src={ing.image}
+                  alt={ing.name}
+                  size={95}
                 />
               </div>
               <div className="ingredient-details">
@@ -98,69 +96,53 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: 
   );
 }
 
-function Burger3DPreview({ items, isSpinning }: { items: Ingredient[]; isSpinning: boolean }) {
-  const ordered = useMemo(
-    () => [...items].sort((a, b) => a.order - b.order),
-    [items]
+function SpinningBurger({ hasIngredients }: { hasIngredients: boolean }) {
+  return (
+    <div className={`spinning-burger-container ${hasIngredients ? 'with-ingredients' : ''}`}>
+      <div className="spinning-burger">
+        <Image
+          src={HAMBURGER_BASE_IMAGE}
+          alt="Hambúrguer"
+          width={280}
+          height={280}
+          style={{ objectFit: 'contain' }}
+          priority
+          unoptimized
+        />
+      </div>
+      <div className="burger-shadow"></div>
+    </div>
   );
+}
 
-  // Calculate layer positions for stacking effect
-  const getLayerStyle = (index: number, total: number) => {
-    const baseBottom = 10;
-    const layerHeight = total > 1 ? Math.min(45, 180 / total) : 50;
-    return {
-      bottom: `${baseBottom + index * layerHeight}px`,
-      zIndex: index + 1,
-      animationDelay: `${index * 0.1}s`,
-    };
-  };
+function IngredientOrbit({ items }: { items: Ingredient[] }) {
+  if (items.length === 0) return null;
 
   return (
-    <div className={`burger-3d-container ${isSpinning ? 'spinning' : ''}`}>
-      <div className="burger-platform">
-        <div className="platform-shadow"></div>
-      </div>
+    <div className="ingredients-orbit">
+      {items.map((ingredient, index) => {
+        const angle = (360 / items.length) * index;
+        const delay = index * 0.1;
 
-      <div className="burger-3d-wrapper">
-        <div className="burger-3d">
-          {ordered.length === 0 ? (
-            <div className="empty-burger-hint">
-              <div className="hint-icon">🍔</div>
-              <p>Seu hambúrguer aparecerá aqui</p>
-              <span>Selecione os ingredientes para começar</span>
+        return (
+          <div
+            key={`${ingredient.id}-${index}`}
+            className="orbit-item"
+            style={{
+              '--angle': `${angle}deg`,
+              '--delay': `${delay}s`,
+            } as React.CSSProperties}
+          >
+            <div className="orbit-item-inner">
+              <IngredientImage
+                src={ingredient.image}
+                alt={ingredient.name}
+                size={60}
+              />
             </div>
-          ) : (
-            ordered.map((ingredient, index) => (
-              <div
-                key={`${ingredient.id}-${index}`}
-                className="burger-3d-layer"
-                style={getLayerStyle(index, ordered.length)}
-              >
-                <div className="layer-content">
-                  <SpriteImage
-                    sheet={ingredient.sheet}
-                    x={ingredient.x}
-                    y={ingredient.y}
-                    width={ingredient.width}
-                    height={ingredient.height}
-                    scale={0.65}
-                    ariaLabel={ingredient.name}
-                  />
-                </div>
-                <div className="layer-shadow"></div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {items.length > 0 && (
-        <div className="burger-particles">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="particle" style={{ '--delay': `${i * 0.3}s` } as React.CSSProperties}></div>
-          ))}
-        </div>
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -207,7 +189,6 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
 
   const totalPrice = useMemo(
     () => calcularPrecoTotal(selectedIngredients),
@@ -221,15 +202,6 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         .filter((ing): ing is Ingredient => !!ing),
     [selectedIngredients]
   );
-
-  // Animate on ingredient add
-  useEffect(() => {
-    if (selectedIngredients.length > 0) {
-      setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedIngredients.length]);
 
   const startFlow = () => {
     setHasStarted(true);
@@ -299,7 +271,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
       {/* Main Builder Area */}
       <section className="builder-main">
-        {/* 3D Burger Preview */}
+        {/* Spinning Burger Preview */}
         <div className="preview-panel">
           <div className="preview-header">
             <div className="preview-title">
@@ -312,10 +284,10 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             </div>
           </div>
 
-          <Burger3DPreview
-            items={sortedIngredients}
-            isSpinning={sortedIngredients.length > 0}
-          />
+          <div className="burger-preview-area">
+            <SpinningBurger hasIngredients={sortedIngredients.length > 0} />
+            <IngredientOrbit items={sortedIngredients} />
+          </div>
 
           <div className="preview-ingredients">
             <IngredientsList

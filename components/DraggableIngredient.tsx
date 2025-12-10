@@ -2,7 +2,8 @@
 
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Ingredient, SPRITE_SHEET_SIZE } from '@/lib/ingredientsData';
+import Image from 'next/image';
+import { Ingredient } from '@/lib/ingredientsData';
 
 type Props = {
   ingredient: Ingredient;
@@ -14,10 +15,6 @@ export default function DraggableIngredient({ ingredient, currencyFormat }: Prop
     id: ingredient.id,
     data: ingredient,
   });
-
-  const previewScale = 0.45;
-  const previewWidth = ingredient.width * previewScale;
-  const previewHeight = ingredient.height * previewScale;
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -33,16 +30,16 @@ export default function DraggableIngredient({ ingredient, currencyFormat }: Prop
       {...attributes}
       className="ingredient-card"
     >
-      <div
-        className="ingredient-sprite"
-        style={{
-          width: previewWidth,
-          height: previewHeight,
-          backgroundImage: `url(${ingredient.sheet})`,
-          backgroundPosition: `-${ingredient.x * previewScale}px -${ingredient.y * previewScale}px`,
-          backgroundSize: `${SPRITE_SHEET_SIZE.width * previewScale}px ${SPRITE_SHEET_SIZE.height * previewScale}px`,
-        }}
-      />
+      <div className="ingredient-image-container">
+        <Image
+          src={ingredient.image}
+          alt={ingredient.name}
+          width={80}
+          height={80}
+          style={{ objectFit: 'contain' }}
+          unoptimized
+        />
+      </div>
       <div className="ingredient-info">
         <span className="ingredient-name">{ingredient.name}</span>
         <span className="ingredient-price">
