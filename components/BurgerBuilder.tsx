@@ -44,9 +44,10 @@ type CategoryModalProps = {
   onClose: () => void;
   onSelect: (ingredientId: string) => void;
   currencyFormat: (value: number) => string;
+  isLastCategory: boolean;
 };
 
-function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: CategoryModalProps) {
+function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, isLastCategory }: CategoryModalProps) {
   if (!isOpen) return null;
 
   const ingredientes = getIngredientesPorCategoria(category);
@@ -63,7 +64,7 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat }: 
             </div>
           </div>
           <button className="btn-skip" onClick={onClose}>
-            Pular <span className="skip-arrow">→</span>
+            {isLastCategory ? 'Finalizar' : 'Próximo Ingrediente'} <span className="skip-arrow">→</span>
           </button>
         </div>
 
@@ -374,6 +375,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
           onClose={goToNextCategory}
           onSelect={handleSelectIngredient}
           currencyFormat={currencyFormat}
+          isLastCategory={activeCategoryIndex === CATEGORY_FLOW.length - 1}
         />
       )}
     </div>
