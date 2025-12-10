@@ -1842,3 +1842,343 @@ a {
     touch-action: manipulation;
   }
 }
+
+/* ========================================
+   KITCHEN THEATER - Experiência Imersiva
+   ======================================== */
+
+.kitchen-theater {
+  background: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  margin: 1rem 0;
+}
+
+.kitchen-theater--loading {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kitchen-theater__loader {
+  text-align: center;
+  color: var(--white);
+}
+
+.kitchen-theater__loader .loader-icon {
+  font-size: 4rem;
+  display: block;
+  animation: pulse 1.5s ease-in-out infinite;
+  margin-bottom: 1rem;
+}
+
+.kitchen-theater__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.phase-badge {
+  background: var(--gold-gradient);
+  color: var(--text-dark);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pedido-id {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.time-display {
+  color: var(--accent-gold);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.kitchen-theater__video-container {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  max-height: 500px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .kitchen-theater__video-container {
+    aspect-ratio: 16 / 9;
+    max-height: 400px;
+  }
+}
+
+.kitchen-theater__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kitchen-theater__placeholder {
+  text-align: center;
+  color: var(--white);
+  padding: 2rem;
+}
+
+.kitchen-theater__placeholder .placeholder-icon {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 1rem;
+  animation: cooking 2s ease-in-out infinite;
+}
+
+@keyframes cooking {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.kitchen-theater__placeholder p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.kitchen-theater__placeholder small {
+  opacity: 0.5;
+  font-size: 0.85rem;
+}
+
+.kitchen-theater__complete {
+  text-align: center;
+  color: var(--white);
+  padding: 3rem 2rem;
+  animation: fadeIn 0.5s ease;
+}
+
+.kitchen-theater__complete .complete-icon {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 1rem;
+  animation: sparkle 1s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.kitchen-theater__complete h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent-gold);
+}
+
+.kitchen-theater__complete p {
+  opacity: 0.8;
+}
+
+.kitchen-theater__overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  padding: 2rem 1rem 1rem;
+}
+
+.kitchen-theater__overlay .current-action {
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.kitchen-theater__play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: var(--white);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.kitchen-theater__video-container:hover .kitchen-theater__play-btn {
+  opacity: 1;
+}
+
+.kitchen-theater__play-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: var(--accent-gold);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.kitchen-theater__progress {
+  padding: 1rem 1.25rem;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: var(--gold-gradient);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px var(--glow-gold);
+}
+
+.progress-steps {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.progress-step {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.progress-step.completed {
+  background: var(--accent-gold);
+}
+
+.progress-step.active {
+  background: var(--accent-gold);
+  box-shadow: 0 0 10px var(--glow-gold);
+  transform: scale(1.3);
+}
+
+.kitchen-theater__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.step-counter {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+}
+
+.progress-percent {
+  color: var(--accent-gold);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Página de acompanhamento */
+.acompanhamento-page {
+  padding: 1rem;
+}
+
+.acompanhamento-page h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.acompanhamento-page .step-subtitle {
+  margin-bottom: 1.5rem;
+}
+
+.acompanhamento-info {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.acompanhamento-info h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ingredientes-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ingrediente-tag {
+  background: var(--background-kraft);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+/* Responsividade Kitchen Theater */
+@media (max-width: 640px) {
+  .kitchen-theater {
+    border-radius: 16px;
+    margin: 0.5rem 0;
+  }
+
+  .kitchen-theater__header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .phase-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.65rem;
+  }
+
+  .kitchen-theater__video-container {
+    max-height: 60vh;
+  }
+
+  .kitchen-theater__overlay .current-action {
+    font-size: 0.9rem;
+  }
+
+  .progress-steps {
+    display: none;
+  }
+
+  .kitchen-theater__footer {
+    padding: 0.6rem 1rem;
+  }
+}
