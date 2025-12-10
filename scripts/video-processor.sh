@@ -102,7 +102,7 @@ process_folder() {
     echo ""
     echo -e "${YELLOW}📂 Processando pasta: $folder${NC}"
 
-    for file in "$RAW_DIR/$folder"/*.{mp4,mov,avi,mkv,webm} 2>/dev/null; do
+    for file in "$RAW_DIR/$folder"/*.{mp4,mov,avi,mkv,webm}; do
         [ -f "$file" ] || continue
 
         local filename=$(basename "$file")
