@@ -4,6 +4,13 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS/Android Safe Area Support */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 :root {
@@ -1496,6 +1503,8 @@ a {
   bottom: 0;
   background: #f0d7aa;
   border-top: 1px solid rgba(0,0,0,0.08);
+  /* iOS Safe Area - bottom notch support */
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .app-footer nav {
@@ -1771,9 +1780,65 @@ a {
 @media (max-width: 640px) {
   .extras-images-container {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .extras-image-card {
+    border-radius: 12px;
+  }
+
+  .extras-image-card img {
+    border-radius: 12px;
   }
 
   .extras-modal {
     width: 95vw;
+    max-height: 90vh;
+  }
+}
+
+/* Small phones (iPhone SE, etc) */
+@media (max-width: 380px) {
+  .extras-images-container {
+    gap: 0.5rem;
+  }
+
+  .extras-image-card {
+    border-radius: 10px;
+  }
+
+  .selection-badge {
+    width: 24px;
+    height: 24px;
+    font-size: 0.85rem;
+    top: 8px;
+    right: 8px;
+  }
+
+  .modal-header-premium {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .modal-title-area {
+    justify-content: center;
+  }
+
+  .btn-skip {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* iOS-specific touch improvements */
+@supports (-webkit-touch-callout: none) {
+  .btn,
+  .extras-image-card,
+  .ingredient-card-premium,
+  .category-card {
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
   }
 }
