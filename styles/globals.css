@@ -1631,3 +1631,149 @@ a {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ========================================
+   EXTRAS IMAGES STYLES
+   ======================================== */
+
+.extras-images-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.extras-image-card {
+  position: relative;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.extras-image-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.extras-image-card.has-selection {
+  border: 3px solid var(--success);
+  box-shadow: 0 4px 20px rgba(39, 174, 96, 0.3);
+}
+
+.extras-image-card img {
+  display: block;
+  border-radius: 16px;
+}
+
+.selection-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: var(--success);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: badgePop 0.3s ease;
+}
+
+@keyframes badgePop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Extras Modal Styles */
+.extras-modal {
+  width: min(500px, 95vw);
+}
+
+.extras-modal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+.extras-card {
+  flex-direction: row;
+  padding: 1.25rem;
+  gap: 1rem;
+}
+
+.extras-card.selected {
+  border-color: var(--success);
+  background: rgba(39, 174, 96, 0.15);
+}
+
+.extras-check {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.extras-card.selected .extras-check {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.check-icon {
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.extras-card .ingredient-details {
+  flex: 1;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.extras-card .ingredient-name-premium {
+  font-size: 1rem;
+}
+
+.extras-card .ingredient-price-tag.selected {
+  background: rgba(39, 174, 96, 0.3);
+  color: var(--success);
+}
+
+.extras-modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.extras-modal-footer .btn-primary-premium {
+  flex: none;
+  min-width: 200px;
+}
+
+@media (max-width: 640px) {
+  .extras-images-container {
+    grid-template-columns: 1fr;
+  }
+
+  .extras-modal {
+    width: 95vw;
+  }
+}
