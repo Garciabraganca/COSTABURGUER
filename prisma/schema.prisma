@@ -95,13 +95,17 @@ model Pedido {
   updatedAt     DateTime @updatedAt
 
   // Status do pedido
-  status        String   @default("CONFIRMADO") // CONFIRMADO, PREPARANDO, EM_ENTREGA, ENTREGUE, CANCELADO
+  status        String   @default("CONFIRMADO") // CONFIRMADO, PREPARANDO, PRONTO, EM_ENTREGA, ENTREGUE, CANCELADO
 
   // Dados do cliente
   nome          String
   celular       String
   endereco      String
   tipoEntrega   String   // ENTREGA ou RETIRADA
+
+  // Coordenadas do endereço de entrega (opcional)
+  latitude      Float?
+  longitude     Float?
 
   // Valores financeiros
   subtotal      Float    @default(0) // Soma dos itens
@@ -122,6 +126,7 @@ model Pedido {
   // Relações detalhadas
   burgers       ItemPedidoBurger[]
   acompanhamentos ItemPedidoAcompanhamento[]
+  entrega       Entrega?
 
   @@index([status])
   @@index([createdAt])
@@ -225,5 +230,72 @@ model MovimentacaoEstoque {
 
   @@index([tipoItem, itemId])
   @@index([pedidoId])
+  @@index([createdAt])
+}
+
+// ============================================
+// DELIVERY - Entrega e Rastreamento
+// ============================================
+
+model Entrega {
+  id            String   @id @default(cuid())
+
+  // Relação com pedido
+  pedidoId      String   @unique
+  pedido        Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  // Status da entrega
+  status        String   @default("AGUARDANDO") // AGUARDANDO, A_CAMINHO, CHEGANDO, ENTREGUE
+
+  // Dados do motoboy
+  motoboyNome   String?
+  motoboyCelular String?
+
+  // Token de acesso para o motoboy (usado na URL)
+  token         String   @unique @default(cuid())
+
+  // Localização atual do motoboy
+  latitudeAtual  Float?
+  longitudeAtual Float?
+  ultimaAtualizacao DateTime?
+
+  // Timestamps
+  despachadoEm  DateTime @default(now())
+  iniciadoEm    DateTime? // Quando o motoboy começou a entrega
+  finalizadoEm  DateTime? // Quando foi entregue
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Histórico de localizações
+  localizacoes  LocalizacaoEntrega[]
+
+  @@index([token])
+  @@index([status])
+}
+
+model LocalizacaoEntrega {
+  id          String   @id @default(cuid())
+
+  // Relação com entrega
+  entregaId   String
+  entrega     Entrega  @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+
+  // Coordenadas
+  latitude    Float
+  longitude   Float
+
+  // Precisão (em metros)
+  precisao    Float?
+
+  // Velocidade (m/s)
+  velocidade  Float?
+
+  // Direção (graus)
+  direcao     Float?
+
+  createdAt   DateTime @default(now())
+
+  @@index([entregaId])
   @@index([createdAt])
 }
