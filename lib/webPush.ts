@@ -206,9 +206,11 @@ export const notificationTemplates = {
   }),
 };
 
-export default {
+const webPushApi = {
   sendPushNotification,
   sendPushToMany,
   notificationTemplates,
   VAPID_KEYS,
 };
+
+export default webPushApi;

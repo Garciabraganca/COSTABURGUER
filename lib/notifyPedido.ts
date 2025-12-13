@@ -148,10 +148,12 @@ export async function notifyAllUsers(
   return result;
 }
 
-export default {
+const notifyPedidoApi = {
   notifyPedidoStatus,
   notifyEntregadorChegando,
   notifyPedidoCustom,
   linkSubscriptionToPedido,
   notifyAllUsers,
 };
+
+export default notifyPedidoApi;
