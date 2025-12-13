@@ -2,7 +2,7 @@
 import pushStore from './pushStore';
 import { sendPushToMany, notificationTemplates, PushPayload } from './webPush';
 
-export type PedidoStatus = 'CONFIRMADO' | 'PREPARANDO' | 'EM_ENTREGA' | 'ENTREGUE';
+export type PedidoStatus = 'CONFIRMADO' | 'PREPARANDO' | 'EM_ENTREGA' | 'ENTREGUE' | 'CANCELADO';
 
 // Notifica sobre mudança de status do pedido
 export async function notifyPedidoStatus(
@@ -23,6 +23,9 @@ export async function notifyPedidoStatus(
       break;
     case 'ENTREGUE':
       payload = notificationTemplates.pedidoEntregue(pedidoId);
+      break;
+    case 'CANCELADO':
+      payload = notificationTemplates.pedidoCancelado(pedidoId);
       break;
     default:
       console.warn(`[NotifyPedido] Status desconhecido: ${status}`);

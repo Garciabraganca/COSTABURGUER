@@ -175,6 +175,16 @@ export const notificationTemplates = {
     data: { pedidoId, status: 'ENTREGUE' },
   }),
 
+  pedidoCancelado: (pedidoId: string): PushPayload => ({
+    title: '❌ Pedido cancelado',
+    body: `Seu pedido #${pedidoId} foi cancelado.`,
+    icon: '/logo-kraft.svg',
+    tag: `pedido-${pedidoId}-cancelado`,
+    pedidoId,
+    url: `/pedido/${pedidoId}`,
+    data: { pedidoId, status: 'CANCELADO' },
+  }),
+
   entregadorChegando: (pedidoId: string, minutos: number = 5): PushPayload => ({
     title: '📍 Entregador chegando!',
     body: `O entregador está a ${minutos} minutos de você. Prepare-se para receber!`,
