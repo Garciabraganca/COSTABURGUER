@@ -7,15 +7,223 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// CATÁLOGO - Categorias, Ingredientes e Acompanhamentos
+// ============================================
+
+model Categoria {
+  id          String        @id @default(cuid())
+  slug        String        @unique // Ex: 'pao', 'carne', 'queijo'
+  nome        String        // Ex: 'Pães', 'Carnes', 'Queijos'
+  cor         String?       // Cor para exibição no front-end
+  ordem       Int           @default(0)
+  ativo       Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  ingredientes Ingrediente[]
+}
+
+model Ingrediente {
+  id            String   @id @default(cuid())
+  slug          String   @unique // Ex: 'pao-brioche', 'blend-bovino-90'
+  nome          String   // Ex: 'Pão Brioche', 'Blend Bovino 90g'
+  descricao     String?  // Descrição opcional
+  imagem        String?  // Caminho da imagem
+
+  // Preços e Custos
+  preco         Float    // Preço de venda ao cliente
+  custo         Float    @default(0) // Custo de aquisição/produção
+
+  // Estoque
+  estoque       Float    @default(0) // Quantidade em estoque (pode ser fracionário para kg, litros)
+  estoqueMinimo Float    @default(5) // Alerta de estoque baixo
+  unidade       String   @default("un") // Unidade: 'un', 'kg', 'g', 'l', 'ml'
+
+  // Organização
+  categoriaId   String
+  categoria     Categoria @relation(fields: [categoriaId], references: [id])
+  ordem         Int       @default(0)
+  ativo         Boolean   @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relações com pedidos
+  itensPedido   ItemPedidoIngrediente[]
+
+  @@index([categoriaId])
+  @@index([slug])
+}
+
+model Acompanhamento {
+  id            String   @id @default(cuid())
+  slug          String   @unique // Ex: 'batata', 'refri-lata'
+  nome          String   // Ex: 'Batata Frita', 'Refrigerante Lata'
+  descricao     String?
+  imagem        String?
+
+  // Preços e Custos
+  preco         Float    // Preço de venda ao cliente
+  custo         Float    @default(0) // Custo de aquisição
+
+  // Estoque
+  estoque       Float    @default(0)
+  estoqueMinimo Float    @default(10)
+  unidade       String   @default("un")
+
+  // Organização
+  ordem         Int      @default(0)
+  ativo         Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relações com pedidos
+  itensPedido   ItemPedidoAcompanhamento[]
+
+  @@index([slug])
+}
+
+// ============================================
+// PEDIDOS - Com rastreamento de custos
+// ============================================
+
 model Pedido {
+  id            String   @id @default(cuid())
+  numero        Int      @unique @default(autoincrement()) // Número sequencial do pedido
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Status do pedido
+  status        String   @default("CONFIRMADO") // CONFIRMADO, PREPARANDO, EM_ENTREGA, ENTREGUE, CANCELADO
+
+  // Dados do cliente
+  nome          String
+  celular       String
+  endereco      String
+  tipoEntrega   String   // ENTREGA ou RETIRADA
+
+  // Valores financeiros
+  subtotal      Float    @default(0) // Soma dos itens
+  taxaEntrega   Float    @default(0) // Taxa de entrega
+  desconto      Float    @default(0) // Desconto aplicado
+  total         Float    // Valor final cobrado do cliente
+
+  // Controle de custos
+  custoTotal    Float    @default(0) // Soma dos custos dos ingredientes
+  lucro         Float    @default(0) // total - custoTotal
+
+  // Observações
+  observacoes   String?
+
+  // Dados legados (mantidos para compatibilidade)
+  itens         Json?    // JSON com dados do pedido (mantido por compatibilidade)
+
+  // Relações detalhadas
+  burgers       ItemPedidoBurger[]
+  acompanhamentos ItemPedidoAcompanhamento[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Item de burger dentro de um pedido
+model ItemPedidoBurger {
   id          String   @id @default(cuid())
+  pedidoId    String
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  nome        String   // Nome do burger (ex: "Meu Burger Personalizado")
+  preco       Float    // Preço total do burger
+  custo       Float    @default(0) // Custo total dos ingredientes
+  quantidade  Int      @default(1)
+
+  // Ingredientes usados neste burger
+  ingredientes ItemPedidoIngrediente[]
+
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  status      String
-  nome        String
-  celular     String
-  endereco    String
-  tipoEntrega String
-  total       Float
-  itens       Json
+
+  @@index([pedidoId])
+}
+
+// Relação entre burger do pedido e ingrediente usado
+model ItemPedidoIngrediente {
+  id              String   @id @default(cuid())
+
+  itemBurgerId    String
+  itemBurger      ItemPedidoBurger @relation(fields: [itemBurgerId], references: [id], onDelete: Cascade)
+
+  ingredienteId   String
+  ingrediente     Ingrediente @relation(fields: [ingredienteId], references: [id])
+
+  quantidade      Int      @default(1) // Quantidade do ingrediente usado
+  precoUnitario   Float    // Preço no momento da venda
+  custoUnitario   Float    @default(0) // Custo no momento da venda
+
+  createdAt       DateTime @default(now())
+
+  @@index([itemBurgerId])
+  @@index([ingredienteId])
+}
+
+// Relação entre pedido e acompanhamento
+model ItemPedidoAcompanhamento {
+  id                String   @id @default(cuid())
+
+  pedidoId          String
+  pedido            Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  acompanhamentoId  String
+  acompanhamento    Acompanhamento @relation(fields: [acompanhamentoId], references: [id])
+
+  quantidade        Int      @default(1)
+  precoUnitario     Float    // Preço no momento da venda
+  custoUnitario     Float    @default(0) // Custo no momento da venda
+
+  createdAt         DateTime @default(now())
+
+  @@index([pedidoId])
+  @@index([acompanhamentoId])
+}
+
+// ============================================
+// CONFIGURAÇÕES DO SISTEMA
+// ============================================
+
+model Configuracao {
+  id            String   @id @default(cuid())
+  chave         String   @unique // Ex: 'taxa_entrega', 'horario_funcionamento'
+  valor         String   // Valor em string (parseado conforme necessidade)
+  tipo          String   @default("string") // string, number, boolean, json
+  descricao     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================
+// RELATÓRIOS E MOVIMENTAÇÃO DE ESTOQUE
+// ============================================
+
+model MovimentacaoEstoque {
+  id            String   @id @default(cuid())
+
+  // Tipo de item
+  tipoItem      String   // 'ingrediente' ou 'acompanhamento'
+  itemId        String   // ID do ingrediente ou acompanhamento
+
+  // Movimentação
+  tipo          String   // 'entrada', 'saida', 'ajuste', 'perda'
+  quantidade    Float    // Quantidade movimentada (positivo para entrada, negativo para saída)
+  estoqueAnterior Float  // Estoque antes da movimentação
+  estoqueAtual  Float    // Estoque após a movimentação
+
+  // Contexto
+  pedidoId      String?  // ID do pedido (se for saída por venda)
+  motivo        String?  // Descrição/motivo da movimentação
+
+  createdAt     DateTime @default(now())
+
+  @@index([tipoItem, itemId])
+  @@index([pedidoId])
+  @@index([createdAt])
 }
