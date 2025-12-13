@@ -9,7 +9,12 @@
     "lint": "next lint",
     "postinstall": "PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 prisma generate || true",
     "prisma:push": "prisma db push",
-    "prisma:migrate": "prisma migrate deploy"
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset && npm run prisma:seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -28,6 +33,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
     "prisma": "^5.15.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.5.4"
   }
 }
