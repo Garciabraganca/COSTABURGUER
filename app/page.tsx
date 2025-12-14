@@ -33,6 +33,19 @@ export default function Home() {
       >
         Começar pedido →
       </a>
+
+      <a
+        href="/login"
+        style={{
+          color: "#b22222",
+          textDecoration: "none",
+          fontWeight: "bold",
+          display: "inline-block",
+          marginTop: "12px",
+        }}
+      >
+        Área da empresa
+      </a>
     </main>
   );
 }

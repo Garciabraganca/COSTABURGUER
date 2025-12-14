@@ -1,14 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient | null };
+let warnedMissingDatabaseUrl = false;
 
 function createPrismaClient(): PrismaClient | null {
+  if (!process.env.DATABASE_URL) {
+    if (!warnedMissingDatabaseUrl) {
+      console.warn(
+        "DATABASE_URL não encontrada. Prisma desabilitado; usando modo demo em rotas compatíveis."
+      );
+      warnedMissingDatabaseUrl = true;
+    }
+    return null;
+  }
+
   try {
     return new PrismaClient({
       log: ["error", "warn"]
     });
-  } catch {
-    console.warn("Prisma Client not available - using mock mode");
+  } catch (error) {
+    console.warn("Prisma Client não pôde ser inicializado", error);
     return null;
   }
 }
