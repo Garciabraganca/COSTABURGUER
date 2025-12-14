@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     if (!prisma) {
       return NextResponse.json(
-        { error: 'Banco de dados não configurado' },
+        { error: 'Banco não configurado. Defina DATABASE_URL no ambiente.' },
         { status: 503 }
       );
     }
