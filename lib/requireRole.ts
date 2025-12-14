@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { type UserRole, verificarJwt } from './auth';
+import { type UserRole } from './auth';
+import { verificarJwt } from './jwt';
 
 type RequireRoleSuccess = { ok: true; payload: { id: string; role: UserRole } };
 type RequireRoleFailure = { ok: false; response: NextResponse };
