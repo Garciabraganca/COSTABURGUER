@@ -11,6 +11,7 @@ enum Role {
   ADM
   GERENTE
   COZINHEIRO
+  MOTOBOY
 }
 
 model Usuario {
@@ -19,6 +20,7 @@ model Usuario {
   email      String   @unique
   senhaHash  String
   role       Role
+  ativo      Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

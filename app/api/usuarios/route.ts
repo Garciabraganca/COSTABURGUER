@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { USER_ROLES, hashSenha, type UserRole } from '@/lib/auth';
+import { USER_ROLES, hashSenha, isStrongPassword, isValidEmail, type UserRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/requireRole';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
@@ -15,17 +16,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const adminSetupKey = process.env.ADMIN_SETUP_KEY;
-    const setupKeyHeader = request.headers.get('x-admin-setup-key');
-
-    let authorized = Boolean(adminSetupKey && setupKeyHeader === adminSetupKey);
-
-    if (!authorized) {
-      const auth = await requireRole(request, ['ADM']);
-      if (auth.ok === false) {
-        return auth.response;
-      }
-      authorized = true;
+    const auth = await requireRole(request, ['ADM']);
+    if (auth.ok === false) {
+      return auth.response;
     }
 
     const body = await request.json();
@@ -38,6 +31,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: 'Email inválido' }, { status: 422 });
+    }
+
     const roleVal = role as UserRole;
     const validRoles = USER_ROLES;
 
@@ -45,6 +42,16 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Role inválido' },
         { status: 400 }
+      );
+    }
+
+    if (!isStrongPassword(senha)) {
+      return NextResponse.json(
+        {
+          error:
+            'Senha deve ter ao menos 8 caracteres, uma letra maiúscula e um símbolo.'
+        },
+        { status: 422 }
       );
     }
 
@@ -64,7 +71,8 @@ export async function POST(request: Request) {
         nome,
         email,
         senhaHash,
-        role: roleVal
+        role: roleVal,
+        ativo: true
       }
     });
 
@@ -74,6 +82,7 @@ export async function POST(request: Request) {
         nome: usuario.nome,
         email: usuario.email,
         role: usuario.role,
+        ativo: usuario.ativo,
         createdAt: usuario.createdAt,
         updatedAt: usuario.updatedAt
       },

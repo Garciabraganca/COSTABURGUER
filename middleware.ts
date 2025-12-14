@@ -6,6 +6,10 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const protectedRoutes = ['/cozinha', '/admin', '/gerente'];
 
+  if (pathname.startsWith('/admin/bootstrap')) {
+    return NextResponse.next();
+  }
+
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
     const token = req.cookies.get('token')?.value;
     const payload = token ? await verificarJwt(token) : null;

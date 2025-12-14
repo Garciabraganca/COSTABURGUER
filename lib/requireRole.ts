@@ -25,7 +25,7 @@ function readTokenFromRequest(request: Request) {
 
 export async function requireRole(
   request: Request,
-  allowedRoles: Array<'ADM' | 'GERENTE' | 'COZINHEIRO'>
+  allowedRoles: Array<'ADM' | 'GERENTE' | 'COZINHEIRO' | 'MOTOBOY'>
 ): Promise<RequireRoleSuccess | RequireRoleFailure> {
   const token = readTokenFromRequest(request);
   const payload = token ? await verificarJwt(token) : null;

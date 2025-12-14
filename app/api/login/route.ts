@@ -4,6 +4,7 @@ import { compararSenha, gerarJwt } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
     const usuario = await prisma.usuario.findUnique({ where: { email } });
 
-    if (!usuario) {
+    if (!usuario || !usuario.ativo) {
       return NextResponse.json(
         { error: 'Credenciais inválidas' },
         { status: 401 }
