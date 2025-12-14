@@ -3,37 +3,19 @@ import { memoryStore } from "@/lib/memoryStore";
 import { NextResponse } from "next/server";
 import pushStore from "@/lib/pushStore";
 import { notifyPedidoStatus } from "@/lib/notifyPedido";
-import { toPrismaJson } from "@/lib/json";
+import { Prisma } from "@prisma/client";
 
-// Tipos para os itens do pedido
-interface BurgerItemPayload {
-  nome: string;
-  preco: number;
-  ingredientes?: string[]; // IDs dos ingredientes usados
-  selecionados?: string[]; // Alias para ingredientes
-  camadas?: Record<string, { id: string; nome: string; preco: number }>;
-}
+type OrderItemPayload = Record<string, unknown>;
 
-interface AcompanhamentoPayload {
-  id: string;
-  quantidade?: number;
-}
-
-interface OrderPayload {
+type OrderPayload = {
   nome: string;
   celular: string;
   endereco: string;
   tipoEntrega: string;
   total: number;
-  subtotal?: number;
-  taxaEntrega?: number;
-  desconto?: number;
-  itens: BurgerItemPayload[];
-  extras?: AcompanhamentoPayload[];
-  acompanhamentos?: AcompanhamentoPayload[];
   observacoes?: string;
-  pushEndpoint?: string;
-}
+  itens: Prisma.JsonArray | OrderItemPayload[];
+};
 
 export async function GET() {
   if (!prisma) {
@@ -67,8 +49,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const data: OrderPayload = await req.json();
-  const { pushEndpoint, ...orderData } = data;
+  const data = await req.json();
+  const { pushEndpoint, ...orderData } = data as OrderPayload & { pushEndpoint?: string };
+
+  const itensJson = (orderData.itens ?? []) as Prisma.InputJsonValue;
 
   let pedido;
 
@@ -84,13 +68,22 @@ export async function POST(req: Request) {
       endereco: orderData.endereco,
       tipoEntrega: orderData.tipoEntrega,
       total: orderData.total,
-      itens: orderData.itens,
+      itens: itensJson,
       status: "CONFIRMADO"
     };
     memoryStore.set(id, pedido);
   } else {
-    // Modo com banco de dados - calcula custos e atualiza estoque
-    pedido = await criarPedidoComCustos(orderData);
+    pedido = await prisma.pedido.create({
+      data: {
+        nome: orderData.nome,
+        celular: orderData.celular,
+        endereco: orderData.endereco,
+        tipoEntrega: orderData.tipoEntrega,
+        total: orderData.total,
+        itens: itensJson,
+        status: "CONFIRMADO"
+      }
+    });
   }
 
   // Vincula a subscription do cliente ao pedido (para notificações futuras)
