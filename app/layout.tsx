@@ -3,6 +3,7 @@ import '../styles/globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Providers from './providers';
+import { OrderProvider } from '@/context/OrderContext';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -30,13 +31,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body>
-        <Providers>
-          <div className="page-shell">
-            <Header />
-            <main id="app">{children}</main>
-            <Footer />
-          </div>
-        </Providers>
+        <OrderProvider>
+          <Providers>
+            <div className="page-shell">
+              <Header />
+              <main id="app">{children}</main>
+              <Footer />
+            </div>
+          </Providers>
+        </OrderProvider>
       </body>
     </html>
   );
