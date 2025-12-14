@@ -3,6 +3,7 @@
 const steps = [
   { label: 'Pedido confirmado', status: 'CONFIRMADO' },
   { label: 'Cozinha preparando', status: 'PREPARANDO' },
+  { label: 'Pronto para entrega', status: 'PRONTO' },
   { label: 'Saiu para entrega', status: 'EM_ENTREGA' },
   { label: 'Entregue', status: 'ENTREGUE' },
 ];
