@@ -5,6 +5,8 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient | null };
 let warnedMissingDatabaseUrl = false;
 
 function createPrismaClient(): PrismaClient | null {
+  assertDatabaseUrl();
+
   if (!process.env.DATABASE_URL) {
     if (!warnedMissingDatabaseUrl) {
       console.warn(
@@ -14,8 +16,6 @@ function createPrismaClient(): PrismaClient | null {
     }
     return null;
   }
-
-  assertDatabaseUrl();
 
   try {
     return new PrismaClient({
