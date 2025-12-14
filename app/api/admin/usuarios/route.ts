@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const auth = await requireRole(request, ['ADM']);
+    const auth = await requireRole(request, ['ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const auth = await requireRole(request, ['ADM']);
+    const auth = await requireRole(request, ['ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -95,13 +95,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const senhaHash = await hashSenha(senhaFinal);
+    const passwordHash = await hashSenha(senhaFinal);
     const usuario = await prisma.usuario.create({
       data: {
         nome,
         email,
         role: roleVal,
-        senhaHash,
+        passwordHash,
         ativo: true
       },
       select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }

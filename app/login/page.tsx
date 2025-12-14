@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 const roleRedirect: Record<string, string> = {
   COZINHEIRO: '/cozinha',
   GERENTE: '/gerente',
-  ADM: '/admin',
+  ADMIN: '/admin',
   MOTOBOY: '/cozinha'
 };
 

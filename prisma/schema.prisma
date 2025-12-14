@@ -8,21 +8,28 @@ datasource db {
 }
 
 enum Role {
-  ADM
+  ADMIN
   GERENTE
   COZINHEIRO
   MOTOBOY
+
+  @@map("user_role")
 }
 
 model Usuario {
-  id         String   @id @default(cuid())
-  nome       String
-  email      String   @unique
-  senhaHash  String
-  role       Role
-  ativo      Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  nome              String
+  role              Role
+  ativo             Boolean   @default(true)
+
+  passwordHash      String    @map("password_hash")
+  passwordUpdatedAt DateTime? @map("password_updated_at") @db.Timestamptz(6)
+
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("usuarios")
 }
 
 // ============================================

@@ -11,7 +11,7 @@ interface RouteParams {
 // GET /api/acompanhamentos/[id] - Buscar acompanhamento por ID
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
-    const auth = await requireRole(_request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(_request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -49,7 +49,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 // PATCH /api/acompanhamentos/[id] - Atualizar acompanhamento
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
-    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -133,7 +133,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 // DELETE /api/acompanhamentos/[id] - Deletar acompanhamento (soft delete)
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
-    const auth = await requireRole(_request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(_request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }

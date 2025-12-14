@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/ingredientes - Listar todos os ingredientes
 export async function GET(request: Request) {
   try {
-    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 // POST /api/ingredientes - Criar novo ingrediente
 export async function POST(request: Request) {
   try {
-    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }

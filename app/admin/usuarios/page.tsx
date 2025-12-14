@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
-const ROLES = ['ADM', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
+const ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
 type Role = (typeof ROLES)[number];
 
 type Usuario = {
@@ -200,7 +200,7 @@ export default function UsuariosAdminPage() {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
           <h1 style={{ margin: 0 }}>Usuários</h1>
-          <p style={{ margin: '4px 0', color: '#555' }}>Gerencie acessos da equipe (ADM, GERENTE, COZINHEIRO, MOTOBOY)</p>
+          <p style={{ margin: '4px 0', color: '#555' }}>Gerencie acessos da equipe (ADMIN, GERENTE, COZINHEIRO, MOTOBOY)</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button

@@ -11,7 +11,7 @@ interface RouteParams {
 // POST /api/pedidos/[id]/despachar - Criar entrega e despachar pedido
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -102,7 +102,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 // GET /api/pedidos/[id]/despachar - Buscar informações da entrega
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
-    const auth = await requireRole(_request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(_request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
