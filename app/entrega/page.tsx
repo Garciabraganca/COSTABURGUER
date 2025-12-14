@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useOrder } from '@/context/OrderContext';
+import { useOrder } from '../../context/OrderContext';
 
 export default function EntregaPage() {
   const { customer, updateCustomer } = useOrder();

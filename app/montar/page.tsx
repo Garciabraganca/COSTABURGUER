@@ -1,9 +1,9 @@
 "use client";
 
-import BurgerBuilder from '@/components/BurgerBuilder';
-import ExtrasChips from '@/components/ExtrasChips';
-import SummaryBox from '@/components/SummaryBox';
-import { useOrder } from '@/context/OrderContext';
+import BurgerBuilder from '../../components/BurgerBuilder';
+import ExtrasChips from '../../components/ExtrasChips';
+import SummaryBox from '../../components/SummaryBox';
+import { useOrder } from '../../context/OrderContext';
 import Link from 'next/link';
 
 export default function MontarPage() {
