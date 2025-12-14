@@ -1,25 +1,21 @@
-"use client";
+'use client';
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { EXTRAS, OPTIONS, STEPS } from '@/lib/menuData';
-import { getIngredientePorId } from '@/lib/ingredientsData';
+import { calcularPrecoTotal, getIngredientePorId } from '@/lib/ingredientsData';
 
-export type StepOption = {
+type Step = { id: string; label: string };
+
+type Option = { id: string; nome: string; desc: string; preco: number };
+
+type CartItem = {
   id: string;
   nome: string;
-  desc?: string;
   preco: number;
+  camadas: Record<string, { id: string; nome: string }>;
+  ingredientes: string[];
 };
 
-export type BurgerItem = {
-  id: string;
-  nome: string;
-  camadas: Record<string, StepOption>;
-  preco: number;
-  ingredientes?: string[]; // Lista de IDs de ingredientes para burgers customizados
-};
-
-export type CustomerData = {
+type Customer = {
   nome?: string;
   celular?: string;
   rua?: string;
@@ -29,202 +25,148 @@ export type CustomerData = {
   tipoEntrega?: 'ENTREGA' | 'RETIRADA';
 };
 
-export type OrderItem = {
-  nome: string;
-  preco: number;
-  camadas?: Record<string, StepOption>;
-  selecionados?: string[];
-};
-
-export type OrderPayload = {
-  nome: string;
-  celular: string;
-  endereco: string;
-  tipoEntrega: string;
-  total: number;
-  itens: OrderItem[];
-};
-
 type OrderContextValue = {
-  steps: typeof STEPS;
-  options: typeof OPTIONS;
-  extras: typeof EXTRAS;
+  steps: Step[];
   currentStepIndex: number;
-  setCurrentStepIndex: (index: number) => void;
-  selections: Record<string, StepOption | undefined>;
-  selectOption: (stepId: string, option: StepOption) => void;
-  addCurrentBurgerToCart: () => void;
-  addCustomBurgerToCart: (ingredientes: string[], preco: number) => void;
-  cart: BurgerItem[];
-  removeCartItem: (id: string) => void;
+  setCurrentStepIndex: (idx: number) => void;
+  options: Record<string, Option[]>;
+  selections: Record<string, Option | null>;
+  selectOption: (stepId: string, option: Option) => void;
+  extras: { id: string; nome: string; preco: number }[];
   extrasSelecionados: string[];
   toggleExtra: (id: string) => void;
+
+  cart: CartItem[];
+  addCustomBurgerToCart: (ingredientes: string[], preco?: number) => void;
+  removeCartItem: (id: string) => void;
+
+  currencyFormat: (value: number) => string;
   cartSubtotal: number;
   deliveryFee: number;
-  currencyFormat: (value: number) => string;
-  partialTotal: number;
-  customer: CustomerData;
-  updateCustomer: (data: CustomerData) => void;
-  buildOrderPayload: () => OrderPayload;
+
+  customer: Customer;
+  updateCustomer: (data: Partial<Customer>) => void;
+  buildOrderPayload: () => any;
   resetAfterOrder: () => void;
 };
 
 const OrderContext = createContext<OrderContextValue | null>(null);
 
-const currencyFormat = (value: number) =>
-  value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const DEFAULT_STEPS: Step[] = [
+  { id: 'pao', label: 'Pão' },
+  { id: 'carne', label: 'Carne' },
+  { id: 'queijo', label: 'Queijo' },
+  { id: 'molho', label: 'Molho' },
+];
+
+const DEFAULT_OPTIONS: Record<string, Option[]> = {
+  pao: [
+    { id: 'pao-brioche', nome: 'Brioche', desc: 'Macio e levemente adocicado', preco: 0 },
+    { id: 'pao-australiano', nome: 'Australiano', desc: 'Forte e marcante', preco: 4 },
+  ],
+  carne: [
+    { id: 'blend-bovino-90', nome: 'Blend Bovino 90g', desc: 'Suculento e grelhado', preco: 8 },
+    { id: 'frango-grelhado', nome: 'Frango', desc: 'Opção leve', preco: 7 },
+  ],
+  queijo: [
+    { id: 'queijo-cheddar', nome: 'Cheddar', desc: 'Clássico', preco: 3 },
+    { id: 'queijo-mussarela', nome: 'Mussarela', desc: 'Derretido', preco: 2.5 },
+  ],
+  molho: [
+    { id: 'maionese', nome: 'Maionese', desc: 'Cremosa', preco: 0 },
+    { id: 'barbecue', nome: 'Barbecue', desc: 'Defumado', preco: 1.5 },
+  ],
+};
+
+const DEFAULT_EXTRAS = [
+  { id: 'batata', nome: 'Batata frita', preco: 9 },
+  { id: 'sobremesa', nome: 'Sobremesa do dia', preco: 7 },
+  { id: 'refri-lata', nome: 'Refrigerante lata', preco: 6 },
+  { id: 'refri-1l', nome: 'Refrigerante 1L', preco: 10 },
+];
+
+function uid() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [selections, setSelections] = useState<Record<string, StepOption | undefined>>({});
-  const [cart, setCart] = useState<BurgerItem[]>([]);
+  const [selections, setSelections] = useState<Record<string, Option | null>>({});
   const [extrasSelecionados, setExtrasSelecionados] = useState<string[]>([]);
-  const [customer, setCustomer] = useState<CustomerData>({ tipoEntrega: 'ENTREGA' });
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [customer, setCustomer] = useState<Customer>({ tipoEntrega: 'ENTREGA' });
 
-  const partialTotal = useMemo(
-    () => Object.values(selections).reduce((acc, opt) => acc + (opt?.preco || 0), 0),
-    [selections]
-  );
+  const currencyFormat = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  const extrasTotal = useMemo(
-    () =>
-      EXTRAS.filter((extra) => extrasSelecionados.includes(extra.id)).reduce(
-        (acc, extra) => acc + extra.preco,
-        0
-      ),
-    [extrasSelecionados]
-  );
-
-  const cartSubtotal = useMemo(() => {
-    const base = cart.reduce((acc, item) => acc + item.preco, 0);
-    return base + extrasTotal;
-  }, [cart, extrasTotal]);
-
-  const deliveryFee = cart.length > 0 ? 7 : 0;
-
-  function selectOption(stepId: string, option: StepOption) {
+  const selectOption = (stepId: string, option: Option) => {
     setSelections((prev) => ({ ...prev, [stepId]: option }));
-  }
+  };
 
-  function resetSelections() {
-    setSelections({});
-    setCurrentStepIndex(0);
-  }
-
-  function addCurrentBurgerToCart() {
-    const missingStep = STEPS.find((step) => !selections[step.id]);
-    if (missingStep) {
-      throw new Error(`Você ainda não escolheu a camada: ${missingStep.label}`);
-    }
-
-    const total = Object.values(selections).reduce((acc, opt) => acc + (opt?.preco || 0), 0);
-    const item: BurgerItem = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2, 7)}`,
-      nome: 'Meu Burger em Camadas',
-      camadas: { ...selections },
-      preco: total,
-    };
-    setCart((prev) => [...prev, item]);
-    resetSelections();
-  }
-
-  function addCustomBurgerToCart(ingredientes: string[], preco: number) {
-    // Monta descrição dos ingredientes
-    const nomes = ingredientes
-      .map((id) => getIngredientePorId(id)?.name ?? id)
-      .filter(Boolean)
-      .join(', ');
-
-    const item: BurgerItem = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2, 7)}`,
-      nome: 'Burger Personalizado',
-      camadas: {
-        custom: {
-          id: 'custom',
-          nome: nomes || 'Personalizado',
-          preco: preco,
-        },
-      },
-      ingredientes: ingredientes,
-      preco: preco,
-    };
-    setCart((prev) => [...prev, item]);
-  }
-
-  function removeCartItem(id: string) {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  }
-
-  function toggleExtra(id: string) {
+  const toggleExtra = (id: string) => {
     setExtrasSelecionados((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((extraId) => extraId !== id) : [...prev, id]
     );
-  }
+  };
 
-  function updateCustomer(data: CustomerData) {
-    setCustomer((prev) => ({ ...prev, ...data }));
-  }
+  const addCustomBurgerToCart = (ingredientes: string[], preco?: number) => {
+    const camadas = ingredientes.reduce<Record<string, { id: string; nome: string }>>((acc, id) => {
+      const ing = getIngredientePorId(id);
+      if (ing) {
+        acc[ing.category] = { id: ing.id, nome: ing.name };
+      }
+      return acc;
+    }, {});
 
-  function buildOrderPayload(): OrderPayload {
-    const nome = customer.nome?.trim() || 'Cliente Costa-Burger';
-    const celular = customer.celular?.trim() || 'Sem número';
-    const endereco = customer.tipoEntrega === 'RETIRADA'
-      ? 'Retirada no balcão'
-      : [customer.rua, customer.bairro, customer.complemento, customer.referencia]
-          .filter(Boolean)
-          .join(', ') || 'Endereço não informado';
-
-    const itens: OrderItem[] = [
-      ...cart.map((item) => ({
-        nome: item.nome,
-        preco: item.preco,
-        camadas: item.camadas,
-      })),
-    ];
-
-    if (extrasSelecionados.length > 0) {
-      itens.push({
-        nome: 'Extras',
-        preco: extrasTotal,
-        selecionados: extrasSelecionados,
-      });
-    }
-
-    const total = cartSubtotal + deliveryFee;
-
-    return {
-      nome,
-      celular,
-      endereco,
-      tipoEntrega: customer.tipoEntrega || 'ENTREGA',
-      total,
-      itens,
+    const total = typeof preco === 'number' ? preco : calcularPrecoTotal(ingredientes);
+    const item: CartItem = {
+      id: uid(),
+      nome: 'Burger personalizado',
+      preco: total,
+      camadas,
+      ingredientes,
     };
-  }
+    setCart((prev) => [...prev, item]);
+  };
 
-  function resetAfterOrder() {
+  const removeCartItem = (id: string) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const cartSubtotal = useMemo(() => cart.reduce((sum, item) => sum + item.preco, 0), [cart]);
+  const deliveryFee = 8;
+
+  const updateCustomer = (data: Partial<Customer>) => setCustomer((prev) => ({ ...prev, ...data }));
+
+  const buildOrderPayload = () => ({
+    items: cart,
+    extras: extrasSelecionados,
+    total: cartSubtotal + deliveryFee,
+    customer,
+  });
+
+  const resetAfterOrder = () => {
     setCart([]);
+    setSelections({});
     setExtrasSelecionados([]);
-  }
+    setCurrentStepIndex(0);
+  };
 
   const value: OrderContextValue = {
-    steps: STEPS,
-    options: OPTIONS,
-    extras: EXTRAS,
+    steps: DEFAULT_STEPS,
     currentStepIndex,
     setCurrentStepIndex,
+    options: DEFAULT_OPTIONS,
     selections,
     selectOption,
-    addCurrentBurgerToCart,
-    addCustomBurgerToCart,
-    cart,
-    removeCartItem,
+    extras: DEFAULT_EXTRAS,
     extrasSelecionados,
     toggleExtra,
+    cart,
+    addCustomBurgerToCart,
+    removeCartItem,
+    currencyFormat,
     cartSubtotal,
     deliveryFee,
-    currencyFormat,
-    partialTotal,
     customer,
     updateCustomer,
     buildOrderPayload,
@@ -235,9 +177,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useOrder() {
-  const context = useContext(OrderContext);
-  if (!context) {
-    throw new Error('useOrder deve ser usado dentro de OrderProvider');
-  }
-  return context;
+  const ctx = useContext(OrderContext);
+  if (!ctx) throw new Error('useOrder must be used inside <OrderProvider>');
+  return ctx;
 }
