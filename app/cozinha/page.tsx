@@ -209,6 +209,11 @@ export default function CozinhaPage() {
     return `${Math.floor(minutos / 60)}h${minutos % 60}min`;
   };
 
+  const sair = () => {
+    document.cookie = 'token=; Path=/; Max-Age=0';
+    window.location.href = '/login';
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#1a1a1a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -229,23 +234,40 @@ export default function CozinhaPage() {
         </div>
 
         {/* Estatísticas */}
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ background: '#e74c3c', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.confirmados}</div>
-            <div style={{ fontSize: '0.75rem' }}>Confirmados</div>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ background: '#e74c3c', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.confirmados}</div>
+              <div style={{ fontSize: '0.75rem' }}>Confirmados</div>
+            </div>
+            <div style={{ background: '#f39c12', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.preparando}</div>
+              <div style={{ fontSize: '0.75rem' }}>Preparando</div>
+            </div>
+            <div style={{ background: '#27ae60', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.prontos}</div>
+              <div style={{ fontSize: '0.75rem' }}>Prontos</div>
+            </div>
+            <div style={{ background: '#3498db', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.emEntrega}</div>
+              <div style={{ fontSize: '0.75rem' }}>Em Entrega</div>
+            </div>
           </div>
-          <div style={{ background: '#f39c12', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.preparando}</div>
-            <div style={{ fontSize: '0.75rem' }}>Preparando</div>
-          </div>
-          <div style={{ background: '#27ae60', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.prontos}</div>
-            <div style={{ fontSize: '0.75rem' }}>Prontos</div>
-          </div>
-          <div style={{ background: '#3498db', padding: '0.5rem 1rem', borderRadius: '0.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{stats.emEntrega}</div>
-            <div style={{ fontSize: '0.75rem' }}>Em Entrega</div>
-          </div>
+
+          <button
+            onClick={sair}
+            style={{
+              padding: '0.75rem 1rem',
+              background: '#444',
+              color: '#fff',
+              border: '1px solid #666',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Sair
+          </button>
         </div>
       </header>
 

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireRole } from '@/lib/requireRole';
+
+export const dynamic = 'force-dynamic';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -8,6 +11,11 @@ interface RouteParams {
 // GET /api/ingredientes/[id] - Buscar ingrediente por ID
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireRole(_request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     if (!prisma) {
@@ -46,6 +54,11 @@ export async function GET(_request: Request, { params }: RouteParams) {
 // PATCH /api/ingredientes/[id] - Atualizar ingrediente
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     if (!prisma) {
@@ -145,6 +158,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 // DELETE /api/ingredientes/[id] - Deletar ingrediente (soft delete)
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireRole(_request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     if (!prisma) {
