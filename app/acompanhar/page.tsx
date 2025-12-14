@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import KitchenTheater from '@/components/KitchenTheater';
-import { useOrder } from '@/context/OrderContext';
+import KitchenTheater from '../../components/KitchenTheater';
+import { useOrder } from '../../context/OrderContext';
 
 // Ingredientes de exemplo para demonstração
 const ingredientesDemo = [
