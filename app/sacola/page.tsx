@@ -1,9 +1,9 @@
 "use client";
 
-import ExtrasChips from '@/components/ExtrasChips';
-import SummaryBox from '@/components/SummaryBox';
-import CartView from '@/components/CartView';
-import { useOrder } from '@/context/OrderContext';
+import ExtrasChips from '../../components/ExtrasChips';
+import SummaryBox from '../../components/SummaryBox';
+import CartView from '../../components/CartView';
+import { useOrder } from '../../context/OrderContext';
 import Link from 'next/link';
 
 export default function SacolaPage() {
