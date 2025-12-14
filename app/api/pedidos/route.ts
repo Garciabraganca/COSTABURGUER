@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import pushStore from "@/lib/pushStore";
 import { notifyPedidoStatus } from "@/lib/notifyPedido";
 import { Prisma } from "@prisma/client";
+import { toPrismaJson } from "@/lib/json";
 
 type OrderItemPayload = Prisma.InputJsonObject;
 
@@ -113,14 +114,14 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
 
   // Extrair slugs dos burgers
   for (const burger of orderData.itens || []) {
-    const ingredientesIds = burger.ingredientes || burger.selecionados || [];
+    const ingredientesIds = (burger.ingredientes || burger.selecionados || []) as string[];
     for (const id of ingredientesIds) {
       ingredienteSlugs.add(id);
     }
   }
 
   // Extrair slugs dos acompanhamentos
-  const acompanhamentosPayload = orderData.extras || orderData.acompanhamentos || [];
+  const acompanhamentosPayload = (orderData as any).extras || (orderData as any).acompanhamentos || [];
   for (const ac of acompanhamentosPayload) {
     acompanhamentoSlugs.add(ac.id);
   }
@@ -153,7 +154,7 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
 
   // Preparar dados dos burgers com custos
   const burgersData = (orderData.itens || []).map((burger, index) => {
-    const ingredientesIds = burger.ingredientes || burger.selecionados || [];
+    const ingredientesIds = (burger.ingredientes || burger.selecionados || []) as string[];
     let custoBurger = 0;
 
     const ingredientesRelacao = ingredientesIds
@@ -203,9 +204,9 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
   }).filter(Boolean);
 
   const custoTotal = custoTotalBurgers + custoTotalAcompanhamentos;
-  const subtotal = orderData.subtotal || orderData.total;
-  const taxaEntrega = orderData.taxaEntrega || 0;
-  const desconto = orderData.desconto || 0;
+  const subtotal = (orderData as any).subtotal || orderData.total;
+  const taxaEntrega = (orderData as any).taxaEntrega || 0;
+  const desconto = (orderData as any).desconto || 0;
   const total = orderData.total;
   const lucro = total - custoTotal;
 
@@ -228,7 +229,7 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
         itens: toPrismaJson(orderData.itens), // Mantém JSON para compatibilidade
         status: "CONFIRMADO",
         burgers: {
-          create: burgersData
+          create: burgersData as any
         },
         acompanhamentos: {
           create: acompanhamentosData as Array<{
@@ -251,7 +252,7 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
 
     // 2. Decrementar estoque dos ingredientes
     for (const burger of orderData.itens || []) {
-      const ingredientesIds = burger.ingredientes || burger.selecionados || [];
+      const ingredientesIds = (burger.ingredientes || burger.selecionados || []) as string[];
       for (const slug of ingredientesIds) {
         const ing = ingredienteMap.get(slug);
         if (ing) {

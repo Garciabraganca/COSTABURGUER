@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import OrderTimeline, { OrderStatus } from '@/components/OrderTimeline';
-import DeliveryTracker from '@/components/DeliveryTracker';
+import OrderTimeline, { OrderStatus } from '../../../components/OrderTimeline';
+import DeliveryTracker from '../../../components/DeliveryTracker';
 
 const statusOrder: OrderStatus[] = ['CONFIRMADO', 'PREPARANDO', 'PRONTO', 'EM_ENTREGA', 'ENTREGUE'];
 

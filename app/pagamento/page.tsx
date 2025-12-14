@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import SummaryBox from '@/components/SummaryBox';
-import { useOrder } from '@/context/OrderContext';
+import SummaryBox from '../../components/SummaryBox';
+import { useOrder } from '../../context/OrderContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import NotificationPrompt from '@/components/NotificationPrompt';
-import usePushNotifications from '@/hooks/usePushNotifications';
+import NotificationPrompt from '../../components/NotificationPrompt';
+import usePushNotifications from '../../hooks/usePushNotifications';
 
 export default function PagamentoPage() {
   const { cart, buildOrderPayload, currencyFormat, resetAfterOrder } = useOrder();
