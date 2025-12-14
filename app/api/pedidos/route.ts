@@ -3,6 +3,7 @@ import { memoryStore } from "@/lib/memoryStore";
 import { NextResponse } from "next/server";
 import pushStore from "@/lib/pushStore";
 import { notifyPedidoStatus } from "@/lib/notifyPedido";
+import { toPrismaJson } from "@/lib/json";
 
 // Tipos para os itens do pedido
 interface BurgerItemPayload {
@@ -144,8 +145,12 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
     : [];
 
   // Mapear para acesso rápido
-  const ingredienteMap = new Map(ingredientesDB.map(i => [i.slug, i]));
-  const acompanhamentoMap = new Map(acompanhamentosDB.map(a => [a.slug, a]));
+  const ingredienteMap = new Map<string, (typeof ingredientesDB)[number]>(
+    ingredientesDB.map(i => [i.slug, i])
+  );
+  const acompanhamentoMap = new Map<string, (typeof acompanhamentosDB)[number]>(
+    acompanhamentosDB.map(a => [a.slug, a])
+  );
 
   // Calcular custos
   let custoTotalBurgers = 0;
@@ -225,7 +230,7 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
         custoTotal,
         lucro,
         observacoes: orderData.observacoes || null,
-        itens: orderData.itens, // Mantém JSON para compatibilidade
+        itens: toPrismaJson(orderData.itens), // Mantém JSON para compatibilidade
         status: "CONFIRMADO",
         burgers: {
           create: burgersData

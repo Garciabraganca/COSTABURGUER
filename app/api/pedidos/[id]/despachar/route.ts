@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireRole } from '@/lib/requireRole';
+
+export const dynamic = 'force-dynamic';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -8,6 +11,11 @@ interface RouteParams {
 // POST /api/pedidos/[id]/despachar - Criar entrega e despachar pedido
 export async function POST(request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     if (!prisma) {
@@ -94,6 +102,11 @@ export async function POST(request: Request, { params }: RouteParams) {
 // GET /api/pedidos/[id]/despachar - Buscar informações da entrega
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireRole(_request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     if (!prisma) {
