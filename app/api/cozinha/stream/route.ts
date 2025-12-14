@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/prisma';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // GET /api/cozinha/stream - Stream SSE de pedidos em tempo real para a cozinha
 export async function GET() {
   if (!prisma) {
