@@ -43,23 +43,26 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
 - O avanço de status em `/pedido/[id]` é simulado com PATCH na mesma rota.
 - Integração real com Mercado Pago/WhatsApp pode ser adicionada nos endpoints existentes.
 
-### Configuração do Banco (Supabase)
-1. Crie um projeto no Supabase.
-2. Abra **Project Settings → Database → Connection String → URI**.
-3. Copie a URL completa (postgresql://...).
-4. Crie seu `.env` local:
+### Supabase Setup
+1. No Supabase, acesse **Project Settings → Database → Connection string → URI** e copie a opção **Direct connection (5432)**; ela é necessária para rodar migrations do Prisma.
+2. Crie um `.env` local a partir de `.env.example`, preenchendo:
+   - `DATABASE_URL` com a string copiada (schema `public`).
+   - `JWT_SECRET` com uma string longa e aleatória.
+   - `ADMIN_BOOTSTRAP_KEY` com um segredo único para habilitar o primeiro Admin.
+3. Rode localmente:
    ```bash
-   DATABASE_URL="sua_url_completa"
-   ```
-5. Rode localmente:
-   ```bash
-   npm install
-   npx prisma db push
    npx prisma generate
+   npx prisma migrate dev --name add-usuario
    npm run dev
    ```
-6. Na Vercel:
-   - Project Settings → Environment Variables
-   - Adicione:
-     - DATABASE_URL = (URL completa do Supabase)
-   - Redeploy.
+4. Na Vercel (Production e Preview), adicione as variáveis `DATABASE_URL`, `JWT_SECRET` e `ADMIN_BOOTSTRAP_KEY` em **Project Settings → Environment Variables**.
+5. Para ambientes já publicados, aplique as migrations em produção com:
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+### Bootstrap seguro e painel de usuários
+1. Após o deploy com o banco vazio, acesse `/admin/bootstrap` com a chave de ativação (`ADMIN_BOOTSTRAP_KEY`) para criar o primeiro Admin.
+2. Ao finalizar o bootstrap, você será autenticado automaticamente e redirecionado para `/admin/usuarios`.
+3. Somente usuários com role `ADM` conseguem listar, criar, editar, desativar e resetar senhas dos usuários (`ADM`, `GERENTE`, `COZINHEIRO`, `MOTOBOY`).
+4. Rotas sensíveis de admin exigem JWT válido; mantenha o cookie `token` somente via login e logout pela UI.

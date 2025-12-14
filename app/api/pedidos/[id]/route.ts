@@ -17,7 +17,27 @@ export async function GET(req: Request, context: RouteContext) {
   }
 
   const pedido = await prisma.pedido.findUnique({
-    where: { id }
+    where: { id },
+    include: {
+      burgers: {
+        include: {
+          ingredientes: {
+            include: {
+              ingrediente: {
+                select: { id: true, slug: true, nome: true, imagem: true }
+              }
+            }
+          }
+        }
+      },
+      acompanhamentos: {
+        include: {
+          acompanhamento: {
+            select: { id: true, slug: true, nome: true, imagem: true }
+          }
+        }
+      }
+    }
   });
 
   if (!pedido) {
@@ -48,11 +68,28 @@ export async function PATCH(req: Request, context: RouteContext) {
     const existingPedido = await prisma.pedido.findUnique({ where: { id } });
     oldStatus = existingPedido?.status;
 
+    if (!existingPedido) {
+      return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
+    }
+
+    // Se cancelando o pedido, reverter o estoque
+    if (newStatus === "CANCELADO" && oldStatus !== "CANCELADO") {
+      await reverterEstoquePedido(id);
+    }
+
     pedido = await prisma.pedido.update({
       where: { id },
       data: {
         status: newStatus,
         updatedAt: new Date()
+      },
+      include: {
+        burgers: {
+          include: {
+            ingredientes: true
+          }
+        },
+        acompanhamentos: true
       }
     });
   }
@@ -69,4 +106,76 @@ export async function PATCH(req: Request, context: RouteContext) {
   }
 
   return NextResponse.json(pedido);
+}
+
+// Função para reverter estoque quando pedido é cancelado
+async function reverterEstoquePedido(pedidoId: string) {
+  // Busca as movimentações de saída deste pedido
+  const movimentacoes = await prisma!.movimentacaoEstoque.findMany({
+    where: {
+      pedidoId,
+      tipo: 'saida'
+    }
+  });
+
+  // Reverte cada movimentação
+  for (const mov of movimentacoes) {
+    const quantidadeReverter = Math.abs(mov.quantidade);
+
+    if (mov.tipoItem === 'ingrediente') {
+      const ingrediente = await prisma!.ingrediente.findUnique({
+        where: { id: mov.itemId }
+      });
+
+      if (ingrediente) {
+        const novoEstoque = ingrediente.estoque + quantidadeReverter;
+
+        await prisma!.ingrediente.update({
+          where: { id: mov.itemId },
+          data: { estoque: novoEstoque }
+        });
+
+        // Registra movimentação de entrada (reversão)
+        await prisma!.movimentacaoEstoque.create({
+          data: {
+            tipoItem: 'ingrediente',
+            itemId: mov.itemId,
+            tipo: 'entrada',
+            quantidade: quantidadeReverter,
+            estoqueAnterior: ingrediente.estoque,
+            estoqueAtual: novoEstoque,
+            pedidoId,
+            motivo: `Cancelamento do Pedido #${pedidoId}`
+          }
+        });
+      }
+    } else if (mov.tipoItem === 'acompanhamento') {
+      const acompanhamento = await prisma!.acompanhamento.findUnique({
+        where: { id: mov.itemId }
+      });
+
+      if (acompanhamento) {
+        const novoEstoque = acompanhamento.estoque + quantidadeReverter;
+
+        await prisma!.acompanhamento.update({
+          where: { id: mov.itemId },
+          data: { estoque: novoEstoque }
+        });
+
+        // Registra movimentação de entrada (reversão)
+        await prisma!.movimentacaoEstoque.create({
+          data: {
+            tipoItem: 'acompanhamento',
+            itemId: mov.itemId,
+            tipo: 'entrada',
+            quantidade: quantidadeReverter,
+            estoqueAnterior: acompanhamento.estoque,
+            estoqueAtual: novoEstoque,
+            pedidoId,
+            motivo: `Cancelamento do Pedido #${pedidoId}`
+          }
+        });
+      }
+    }
+  }
 }
