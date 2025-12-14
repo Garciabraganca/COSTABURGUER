@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Role } from '@prisma/client';
 
-import { hashSenha } from '@/lib/auth';
+import { USER_ROLES, hashSenha, type UserRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
@@ -23,8 +22,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const roleVal = role as Role;
-    const validRoles = Object.values(Role);
+    const roleVal = role as UserRole;
+    const validRoles = USER_ROLES;
 
     if (!validRoles.includes(roleVal)) {
       return NextResponse.json(

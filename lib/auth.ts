@@ -1,10 +1,12 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import type { Role } from '@prisma/client';
+
+export const USER_ROLES = ['ADM', 'GERENTE', 'COZINHEIRO'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
 
 type JwtPayload = {
   id: string;
-  role: Role;
+  role: UserRole;
 };
 
 function getJwtSecret() {
