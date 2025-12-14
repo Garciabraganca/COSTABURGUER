@@ -2,14 +2,30 @@ import { NextResponse } from 'next/server';
 
 import { USER_ROLES, hashSenha, type UserRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireRole } from '@/lib/requireRole';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     if (!prisma) {
       return NextResponse.json(
-        { error: 'Banco não configurado. Defina DATABASE_URL no ambiente.' },
+        { error: 'Banco não configurado (DATABASE_URL)' },
         { status: 503 }
       );
+    }
+
+    const adminSetupKey = process.env.ADMIN_SETUP_KEY;
+    const setupKeyHeader = request.headers.get('x-admin-setup-key');
+
+    let authorized = Boolean(adminSetupKey && setupKeyHeader === adminSetupKey);
+
+    if (!authorized) {
+      const auth = await requireRole(request, ['ADM']);
+      if (auth.ok === false) {
+        return auth.response;
+      }
+      authorized = true;
     }
 
     const body = await request.json();
