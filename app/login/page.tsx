@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -94,17 +95,43 @@ export default function LoginPage() {
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <span style={{ fontWeight: 600 }}>Senha</span>
-          <input
-            type="password"
-            value={senha}
-            onChange={e => setSenha(e.target.value)}
-            required
+          <div
             style={{
-              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              border: '1px solid #ddd',
               borderRadius: '8px',
-              border: '1px solid #ddd'
+              padding: '0 8px'
             }}
-          />
+          >
+            <input
+              type={mostrarSenha ? 'text' : 'password'}
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              required
+              style={{
+                flex: 1,
+                padding: '12px 8px',
+                border: 'none',
+                outline: 'none'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha(prev => !prev)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#b22222',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '8px'
+              }}
+              aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {mostrarSenha ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
         </label>
 
         {erro && (

@@ -12,6 +12,7 @@ export default function AdminBootstrapPage() {
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -128,14 +129,44 @@ export default function AdminBootstrapPage() {
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <span style={{ fontWeight: 600 }}>Senha</span>
-          <input
-            type="password"
-            value={senha}
-            onChange={e => setSenha(e.target.value)}
-            required
-            minLength={8}
-            style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}
-          />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              padding: '0 8px'
+            }}
+          >
+            <input
+              type={mostrarSenha ? 'text' : 'password'}
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              required
+              minLength={8}
+              style={{
+                flex: 1,
+                padding: '12px 8px',
+                border: 'none',
+                outline: 'none'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha(prev => !prev)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#b22222',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '8px'
+              }}
+              aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {mostrarSenha ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
           <small style={{ color: '#777' }}>
             Use pelo menos 8 caracteres, incluindo uma letra maiúscula e um símbolo.
           </small>

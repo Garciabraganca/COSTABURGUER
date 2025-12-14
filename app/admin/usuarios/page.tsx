@@ -29,6 +29,7 @@ export default function UsuariosAdminPage() {
   const [novoEmail, setNovoEmail] = useState('');
   const [novoRole, setNovoRole] = useState<Role>('GERENTE');
   const [novaSenha, setNovaSenha] = useState('');
+  const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -495,13 +496,38 @@ export default function UsuariosAdminPage() {
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span>Senha inicial (opcional)</span>
-              <input
-                type="password"
-                value={novaSenha}
-                onChange={e => setNovaSenha(e.target.value)}
-                placeholder="Deixe vazio para gerar senha temporária"
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
-              />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  padding: '0 8px'
+                }}
+              >
+                <input
+                  type={mostrarNovaSenha ? 'text' : 'password'}
+                  value={novaSenha}
+                  onChange={e => setNovaSenha(e.target.value)}
+                  placeholder="Deixe vazio para gerar senha temporária"
+                  style={{ flex: 1, padding: '10px 8px', border: 'none', outline: 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarNovaSenha(prev => !prev)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#b22222',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '8px'
+                  }}
+                  aria-label={mostrarNovaSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {mostrarNovaSenha ? 'Ocultar' : 'Mostrar'}
+                </button>
+              </div>
               <small style={{ color: '#777' }}>
                 Mínimo 8 caracteres, pelo menos uma letra maiúscula e um símbolo.
               </small>
