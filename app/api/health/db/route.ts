@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 type DbInfoRow = { db: string | null; schema: string | null };
-type TableCheckRow = { table_name: string | null };
+type UsuariosExistsRow = { usuarios_exists: boolean };
+type PedidosExistsRow = { pedidos_exists: boolean };
 type PublicTablesRow = { public_tables: number };
 
 type HealthError = {
@@ -24,8 +25,8 @@ type HealthSuccess = {
   prismaClientVersion: string;
   db: string | null;
   schema: string | null;
-  usuarios_table: string | null;
-  pedidos_table: string | null;
+  usuarios_exists: boolean;
+  pedidos_exists: boolean;
   public_tables: number;
 };
 
@@ -58,11 +59,21 @@ export async function GET() {
 
   try {
     const [dbInfo] = await prisma.$queryRaw<DbInfoRow[]>`select current_database() as db, current_schema() as schema;`;
-    const [usuariosRow] = await prisma.$queryRaw<TableCheckRow[]>`
-      select to_regclass('public.usuarios') as table_name;
+    const [usuariosRow] = await prisma.$queryRaw<UsuariosExistsRow[]>`
+      select exists (
+        select 1
+        from information_schema.tables
+        where table_schema = 'public'
+          and table_name = 'usuarios'
+      ) as usuarios_exists;
     `;
-    const [pedidosRow] = await prisma.$queryRaw<TableCheckRow[]>`
-      select to_regclass('public.pedidos') as table_name;
+    const [pedidosRow] = await prisma.$queryRaw<PedidosExistsRow[]>`
+      select exists (
+        select 1
+        from information_schema.tables
+        where table_schema = 'public'
+          and table_name = 'pedidos'
+      ) as pedidos_exists;
     `;
     const [publicTablesRow] = await prisma.$queryRaw<PublicTablesRow[]>`
       select count(*)::int as public_tables
@@ -76,8 +87,8 @@ export async function GET() {
       ...diagnostics,
       db: dbInfo?.db ?? null,
       schema: dbInfo?.schema ?? null,
-      usuarios_table: usuariosRow?.table_name ?? null,
-      pedidos_table: pedidosRow?.table_name ?? null,
+      usuarios_exists: usuariosRow?.usuarios_exists ?? false,
+      pedidos_exists: pedidosRow?.pedidos_exists ?? false,
       public_tables: publicTablesRow?.public_tables ?? 0
     };
 
