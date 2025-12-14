@@ -3,6 +3,19 @@ import { memoryStore } from "@/lib/memoryStore";
 import { NextResponse } from "next/server";
 import pushStore from "@/lib/pushStore";
 import { notifyPedidoStatus } from "@/lib/notifyPedido";
+import { Prisma } from "@prisma/client";
+
+type OrderItemPayload = Record<string, unknown>;
+
+type OrderPayload = {
+  nome: string;
+  celular: string;
+  endereco: string;
+  tipoEntrega: string;
+  total: number;
+  observacoes?: string;
+  itens: Prisma.JsonArray | OrderItemPayload[];
+};
 
 export async function GET() {
   if (!prisma) {
@@ -17,7 +30,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const data = await req.json();
-  const { pushEndpoint, ...orderData } = data;
+  const { pushEndpoint, ...orderData } = data as OrderPayload & { pushEndpoint?: string };
+
+  const itensJson = (orderData.itens ?? []) as Prisma.InputJsonValue;
 
   let pedido;
 
@@ -33,7 +48,7 @@ export async function POST(req: Request) {
       endereco: orderData.endereco,
       tipoEntrega: orderData.tipoEntrega,
       total: orderData.total,
-      itens: orderData.itens,
+      itens: itensJson,
       status: "CONFIRMADO"
     };
     memoryStore.set(id, pedido);
@@ -45,7 +60,7 @@ export async function POST(req: Request) {
         endereco: orderData.endereco,
         tipoEntrega: orderData.tipoEntrega,
         total: orderData.total,
-        itens: orderData.itens,
+        itens: itensJson,
         status: "CONFIRMADO"
       }
     });
