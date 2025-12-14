@@ -14,7 +14,8 @@
     "db:reset": "prisma db push --force-reset && npm run prisma:seed",
     "db:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "seed:admin:force": "ts-node prisma/seed-admin-force.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -40,6 +41,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
     "prisma": "^5.15.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
     "typescript": "^5.5.4"
   }
