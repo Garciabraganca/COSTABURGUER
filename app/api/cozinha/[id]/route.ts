@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { memoryStore } from '@/lib/memoryStore';
 import { notifyPedidoStatus, PedidoStatus } from '@/lib/notifyPedido';
+import { requireRole } from '@/lib/requireRole';
+
+export const dynamic = 'force-dynamic';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -10,6 +13,11 @@ interface RouteParams {
 // PATCH /api/cozinha/[id] - Atualizar status do pedido (para a cozinha)
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const auth = await requireRole(request, ['COZINHEIRO', 'GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { status } = body;

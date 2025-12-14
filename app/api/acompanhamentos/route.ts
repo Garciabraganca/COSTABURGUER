@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireRole } from '@/lib/requireRole';
+
+export const dynamic = 'force-dynamic';
 
 // GET /api/acompanhamentos - Listar todos os acompanhamentos
 export async function GET(request: Request) {
   try {
+    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     if (!prisma) {
       return NextResponse.json(
         { error: 'Banco de dados não configurado' },
@@ -47,6 +55,11 @@ export async function GET(request: Request) {
 // POST /api/acompanhamentos - Criar novo acompanhamento
 export async function POST(request: Request) {
   try {
+    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     if (!prisma) {
       return NextResponse.json(
         { error: 'Banco de dados não configurado' },

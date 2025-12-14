@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { memoryStore } from '@/lib/memoryStore';
+import { requireRole } from '@/lib/requireRole';
+
+export const dynamic = 'force-dynamic';
 
 // GET /api/cozinha - Listar pedidos para a cozinha
 export async function GET(request: Request) {
   try {
+    const auth = await requireRole(request, ['COZINHEIRO', 'GERENTE', 'ADM']);
+    if (auth.ok === false) {
+      return auth.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status'); // Filtrar por status
     const hoje = searchParams.get('hoje') === 'true'; // Apenas pedidos de hoje
