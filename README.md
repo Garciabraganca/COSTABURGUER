@@ -49,6 +49,7 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
    - `DATABASE_URL` com a string copiada (schema `public`).
    - `JWT_SECRET` com uma string longa e aleatória.
    - `ADMIN_BOOTSTRAP_KEY` com um segredo único para habilitar o primeiro Admin.
+   - Em produção, o `DATABASE_URL` deve apontar para o Supabase com conexão direta (5432). Não use `db.prisma.io` a menos que o Prisma Accelerate esteja configurado intencionalmente.
 3. Rode localmente:
    ```bash
    npx prisma generate

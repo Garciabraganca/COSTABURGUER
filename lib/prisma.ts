@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { assertDatabaseUrl } from "./assertDatabaseUrl";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient | null };
 let warnedMissingDatabaseUrl = false;
@@ -13,6 +14,8 @@ function createPrismaClient(): PrismaClient | null {
     }
     return null;
   }
+
+  assertDatabaseUrl();
 
   try {
     return new PrismaClient({
