@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { compararSenha, gerarJwt } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -53,6 +54,14 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      console.error('Banco de dados indisponível:', error);
+      return NextResponse.json(
+        { error: 'Banco de dados indisponível. Tente novamente mais tarde.' },
+        { status: 503 }
+      );
+    }
+
     console.error('Erro ao realizar login:', error);
     return NextResponse.json(
       { error: 'Erro ao realizar login' },
