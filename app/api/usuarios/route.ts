@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const auth = await requireRole(request, ['ADM']);
+    const auth = await requireRole(request, ['ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -64,13 +64,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const senhaHash = await hashSenha(senha);
+    const passwordHash = await hashSenha(senha);
 
     const usuario = await prisma.usuario.create({
       data: {
         nome,
         email,
-        senhaHash,
+        passwordHash,
         role: roleVal,
         ativo: true
       }

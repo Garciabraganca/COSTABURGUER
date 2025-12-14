@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const senhaValida = await compararSenha(senha, usuario.senhaHash);
+    const senhaValida = await compararSenha(senha, usuario.passwordHash);
 
     if (!senhaValida) {
       return NextResponse.json(

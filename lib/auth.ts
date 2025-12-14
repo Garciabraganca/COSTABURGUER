@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 
 import { gerarJwt, getJwtSecret, verificarJwt } from './jwt';
 
-export const USER_ROLES = ['ADM', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
+export const USER_ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;

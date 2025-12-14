@@ -78,13 +78,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const senhaHash = await hashSenha(senha);
+    const passwordHash = await hashSenha(senha);
     const usuario = await prisma.usuario.create({
       data: {
         nome,
         email,
-        senhaHash,
-        role: 'ADM',
+        passwordHash,
+        role: 'ADMIN',
         ativo: true
       }
     });

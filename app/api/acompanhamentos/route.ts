@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/acompanhamentos - Listar todos os acompanhamentos
 export async function GET(request: Request) {
   try {
-    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 // POST /api/acompanhamentos - Criar novo acompanhamento
 export async function POST(request: Request) {
   try {
-    const auth = await requireRole(request, ['GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }

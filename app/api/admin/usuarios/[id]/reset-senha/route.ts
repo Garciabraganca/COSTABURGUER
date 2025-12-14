@@ -17,7 +17,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       );
     }
 
-    const auth = await requireRole(request, ['ADM']);
+    const auth = await requireRole(request, ['ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -38,10 +38,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
       );
     }
 
-    const senhaHash = await hashSenha(senhaFinal);
+    const passwordHash = await hashSenha(senhaFinal);
     const usuario = await prisma.usuario.update({
       where: { id },
-      data: { senhaHash },
+      data: { passwordHash },
       select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
     });
 

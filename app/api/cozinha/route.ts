@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/cozinha - Listar pedidos para a cozinha
 export async function GET(request: Request) {
   try {
-    const auth = await requireRole(request, ['COZINHEIRO', 'GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['COZINHEIRO', 'GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }

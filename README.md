@@ -64,5 +64,5 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
 ### Bootstrap seguro e painel de usuários
 1. Após o deploy com o banco vazio, acesse `/admin/bootstrap` com a chave de ativação (`ADMIN_BOOTSTRAP_KEY`) para criar o primeiro Admin.
 2. Ao finalizar o bootstrap, você será autenticado automaticamente e redirecionado para `/admin/usuarios`.
-3. Somente usuários com role `ADM` conseguem listar, criar, editar, desativar e resetar senhas dos usuários (`ADM`, `GERENTE`, `COZINHEIRO`, `MOTOBOY`).
+3. Somente usuários com role `ADMIN` conseguem listar, criar, editar, desativar e resetar senhas dos usuários (`ADMIN`, `GERENTE`, `COZINHEIRO`, `MOTOBOY`).
 4. Rotas sensíveis de admin exigem JWT válido; mantenha o cookie `token` somente via login e logout pela UI.

@@ -13,7 +13,7 @@ interface RouteParams {
 // PATCH /api/cozinha/[id] - Atualizar status do pedido (para a cozinha)
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
-    const auth = await requireRole(request, ['COZINHEIRO', 'GERENTE', 'ADM']);
+    const auth = await requireRole(request, ['COZINHEIRO', 'GERENTE', 'ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }

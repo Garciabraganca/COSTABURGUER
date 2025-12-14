@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       );
     }
 
-    const auth = await requireRole(request, ['ADM']);
+    const auth = await requireRole(request, ['ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
@@ -73,7 +73,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
       );
     }
 
-    const auth = await requireRole(_request, ['ADM']);
+    const auth = await requireRole(_request, ['ADMIN']);
     if (auth.ok === false) {
       return auth.response;
     }
