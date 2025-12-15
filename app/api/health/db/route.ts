@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
+import { validateDatabaseUrl } from '@/lib/assertDatabaseUrl';
 import prismaPackage from '@prisma/client/package.json';
 
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 type DbInfoRow = { db: string | null; schema: string | null };
 type UsuariosExistsRow = { usuarios_exists: boolean };
@@ -22,6 +23,7 @@ type HealthSuccess = {
   runtime: 'vercel' | 'local';
   databaseUrlHost: string | null;
   databaseUrlHasSslmode: boolean;
+  databaseUrlHasPgbouncer: boolean;
   prismaClientVersion: string;
   db: string | null;
   schema: string | null;
@@ -35,29 +37,43 @@ type HealthFailure = {
   runtime: 'vercel' | 'local';
   databaseUrlHost: string | null;
   databaseUrlHasSslmode: boolean;
+  databaseUrlHasPgbouncer: boolean;
   prismaClientVersion: string;
-  error: HealthError;
+  reason?: string;
+  error?: HealthError;
 };
 
 export async function GET() {
-  const diagnostics = buildDiagnostics();
-
-  if (!prisma) {
-    return NextResponse.json<HealthFailure>(
-      {
-        ok: false,
-        ...diagnostics,
-        error: {
-          name: 'PrismaUnavailable',
-          message: 'Banco não configurado (DATABASE_URL)',
-          code: null
-        }
-      },
-      { status: 503 }
-    );
-  }
+  let diagnostics: Diagnostics | null = null;
 
   try {
+    diagnostics = buildDiagnostics();
+    const { databaseUrlValidation } = diagnostics;
+    const baseDiagnostics = toResponseDiagnostics(diagnostics);
+
+    if (!databaseUrlValidation.ok) {
+      return NextResponse.json<HealthFailure>(
+        { ok: false, ...baseDiagnostics, reason: databaseUrlValidation.reason },
+        { status: 200 }
+      );
+    }
+
+    if (!prisma) {
+      return NextResponse.json<HealthFailure>(
+        {
+          ok: false,
+          ...baseDiagnostics,
+          reason: 'Banco não configurado (DATABASE_URL)',
+          error: {
+            name: 'PrismaUnavailable',
+            message: 'Banco não configurado (DATABASE_URL)',
+            code: null
+          }
+        },
+        { status: 503 }
+      );
+    }
+
     const [dbInfo] = await prisma.$queryRaw<DbInfoRow[]>`select current_database() as db, current_schema() as schema;`;
     const [usuariosRow] = await prisma.$queryRaw<UsuariosExistsRow[]>`
       select exists (
@@ -84,7 +100,7 @@ export async function GET() {
 
     const response: HealthSuccess = {
       ok: true,
-      ...diagnostics,
+      ...baseDiagnostics,
       db: dbInfo?.db ?? null,
       schema: dbInfo?.schema ?? null,
       usuarios_exists: usuariosRow?.usuarios_exists ?? false,
@@ -95,11 +111,12 @@ export async function GET() {
     return NextResponse.json(response);
   } catch (error: unknown) {
     const safeError = normalizeError(error);
+    const fallbackDiagnostics = diagnostics ? toResponseDiagnostics(diagnostics) : toResponseDiagnostics(buildDiagnostics());
 
     return NextResponse.json<HealthFailure>(
       {
         ok: false,
-        ...diagnostics,
+        ...fallbackDiagnostics,
         error: safeError
       },
       { status: 500 }
@@ -107,25 +124,38 @@ export async function GET() {
   }
 }
 
-function buildDiagnostics() {
+type Diagnostics = {
+  runtime: 'vercel' | 'local';
+  prismaClientVersion: string;
+  databaseUrlHost: string | null;
+  databaseUrlHasSslmode: boolean;
+  databaseUrlHasPgbouncer: boolean;
+  databaseUrlValidation: ReturnType<typeof validateDatabaseUrl>;
+};
+
+function buildDiagnostics(): Diagnostics {
   const databaseUrl = process.env.DATABASE_URL;
-  let databaseUrlHost: string | null = null;
-  let databaseUrlHasSslmode = false;
-
-  if (databaseUrl) {
-    try {
-      const parsed = new URL(databaseUrl);
-      databaseUrlHost = parsed.hostname;
-      databaseUrlHasSslmode = parsed.searchParams.has('sslmode');
-    } catch (error) {
-      console.warn('DATABASE_URL inválida para extração de host:', (error as Error).message);
-    }
-  }
-
+  const databaseUrlValidation = validateDatabaseUrl(databaseUrl);
+  const databaseUrlHost = databaseUrlValidation.parsed.host;
+  const databaseUrlHasSslmode = databaseUrlValidation.parsed.hasSslmode;
+  const databaseUrlHasPgbouncer = databaseUrlValidation.parsed.hasPgbouncer;
   const runtime: 'vercel' | 'local' = process.env.VERCEL ? 'vercel' : 'local';
   const prismaClientVersion = prismaPackage.version ?? 'unknown';
 
-  return { databaseUrlHost, databaseUrlHasSslmode, runtime, prismaClientVersion };
+  return {
+    databaseUrlHost,
+    databaseUrlHasSslmode,
+    databaseUrlHasPgbouncer,
+    runtime,
+    prismaClientVersion,
+    databaseUrlValidation
+  };
+}
+
+function toResponseDiagnostics(diagnostics: Diagnostics) {
+  const { runtime, prismaClientVersion, databaseUrlHost, databaseUrlHasSslmode, databaseUrlHasPgbouncer } = diagnostics;
+
+  return { runtime, prismaClientVersion, databaseUrlHost, databaseUrlHasSslmode, databaseUrlHasPgbouncer };
 }
 
 function normalizeError(error: unknown): HealthError {
