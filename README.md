@@ -56,23 +56,33 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
 5. O cliente acompanha pelo mesmo token, vendo status, endereço e última atualização de rota.
 
 ### Supabase Setup
-1. No Supabase, acesse **Project Settings → Database → Connection string → URI** e copie a opção **Direct connection (5432)**; ela é necessária para rodar migrations do Prisma.
+1. No Supabase, acesse **Project Settings → Database → Connection string → URI** e copie **duas** conexões:
+   - **Direct connection (5432)** → use em `DIRECT_URL` para migrations/seed.
+   - **Pooler (6543)** → use em `DATABASE_URL` para o runtime (prisma pooler).
 2. Crie um `.env` local a partir de `.env.example`, preenchendo:
-   - `DATABASE_URL` com a string copiada (schema `public`).
+   - `DATABASE_URL` com a conexão do pooler (`...pooler.supabase.com:6543?sslmode=require&pgbouncer=true`).
+   - `DIRECT_URL` com a conexão direta (porta 5432 + sslmode=require).
    - `JWT_SECRET` com uma string longa e aleatória.
    - `ADMIN_BOOTSTRAP_KEY` com um segredo único para habilitar o primeiro Admin.
-   - Em produção, o `DATABASE_URL` deve apontar para o Supabase com conexão direta (5432). Não use `db.prisma.io` a menos que o Prisma Accelerate esteja configurado intencionalmente.
 3. Rode localmente:
    ```bash
    npx prisma generate
    npx prisma migrate dev --name add-usuario
    npm run dev
    ```
-4. Na Vercel (Production e Preview), adicione as variáveis `DATABASE_URL`, `JWT_SECRET` e `ADMIN_BOOTSTRAP_KEY` em **Project Settings → Environment Variables**.
+4. Na Vercel (Production e Preview), adicione as variáveis `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `AUTO_SEED_CATALOG` (use `1` para popular catálogos vazios) e `ADMIN_BOOTSTRAP_KEY` em **Project Settings → Environment Variables**.
 5. Para ambientes já publicados, aplique as migrations em produção com:
    ```bash
    npx prisma migrate deploy
    ```
+6. Para garantir catálogos e tabelas mínimas em produção, execute:
+   ```bash
+   npx prisma migrate deploy
+   npx prisma db seed
+   # ou use o script helper
+   ./scripts/deploy.sh
+   ```
+   Em bancos vazios, mantenha `AUTO_SEED_CATALOG=1` para permitir popular o catálogo a partir do endpoint `/api/catalog`.
 
 ### Bootstrap seguro e painel de usuários
 1. Após o deploy com o banco vazio, acesse `/admin/bootstrap` com a chave de ativação (`ADMIN_BOOTSTRAP_KEY`) para criar o primeiro Admin.

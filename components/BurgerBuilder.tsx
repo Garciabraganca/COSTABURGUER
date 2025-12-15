@@ -155,6 +155,9 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [seedInfo, setSeedInfo] = useState<{ seeded?: boolean; reason?: string } | undefined>();
+  const [catalogStatus, setCatalogStatus] = useState<'ready' | 'missing' | 'empty' | 'error'>('ready');
+  const [missingTables, setMissingTables] = useState<string[]>([]);
+  const [seedLoading, setSeedLoading] = useState(false);
   const warnedMissingImage = useRef(new Set<string>());
 
   const totalPrice = useMemo(() => selectedIngredients.reduce((total, ing) => total + (ing.preco ?? 0), 0), [selectedIngredients]);
@@ -178,11 +181,13 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     [categories]
   );
 
-  const loadCatalog = useCallback(async () => {
+  const loadCatalog = useCallback(async ({ seed }: { seed?: boolean } = {}) => {
     setLoading(true);
     setError(null);
+    setMissingTables([]);
+
     try {
-      const response = await fetch('/api/catalog');
+      const response = await fetch(`/api/catalog${seed ? '?seed=1' : ''}`);
 
       if (!response.ok) {
         throw new Error('Não foi possível carregar o catálogo');
@@ -193,12 +198,33 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         categories: CatalogCategory[];
         items: Array<Omit<CatalogIngredient, 'categoriaSlug'> & { categoriaSlug?: CatalogCategorySlug | null }>;
         seeded?: { seeded?: boolean; reason?: string };
+        code?: string;
+        missing?: string[];
+        message?: string;
+        action?: string;
       } = await response.json();
 
       if (!data.ok) {
+        if (data.code === 'MISSING_TABLES') {
+          setCatalogStatus('missing');
+          setMissingTables(data.missing || []);
+          setError('Banco não migrado. Consulte o README para aplicar as migrations.');
+          return;
+        }
+
+        if (data.code === 'CATALOG_EMPTY') {
+          setCatalogStatus('empty');
+          setSeedInfo(data.seeded);
+          setCategories(data.categories || []);
+          setIngredientsByCategory({});
+          setError(data.message || 'Catálogo vazio.');
+          return;
+        }
+
         throw new Error('Resposta inesperada ao carregar catálogo');
       }
 
+      setCatalogStatus('ready');
       setSeedInfo(data.seeded);
       setCategories(data.categories || []);
 
@@ -207,7 +233,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
       (data.items || []).forEach((ing) => {
         const categoriaSlug = (ing.categoriaSlug || ing.categoria?.slug || 'extras') as CatalogCategorySlug;
         const manifestImage = getIngredientImage(ing.slug) || getIngredientImage(categoriaSlug);
-        const imagem = ing.imagem || manifestImage || null;
+        const imagem = manifestImage || ing.imagem || null;
 
         if (!imagem && !warnedMissingImage.current.has(ing.slug)) {
           console.warn('[catalog] faltando imagem para', ing.slug);
@@ -227,14 +253,21 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     } catch (err) {
       console.error(err);
       setError('Catálogo indisponível no momento. Tente novamente.');
+      setCatalogStatus('error');
     } finally {
       setLoading(false);
+      setSeedLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadCatalog();
   }, [loadCatalog]);
+
+  const handleSeedRequest = async () => {
+    setSeedLoading(true);
+    await loadCatalog({ seed: true });
+  };
 
   const startFlow = () => {
     setHasStarted(true);
@@ -326,24 +359,46 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
       </section>
 
       {!hasCatalog && (
-        <div className="space-y-3 rounded-2xl border border-dashed border-emerald-400/40 bg-emerald-400/10 p-6 text-white shadow-neon-glow">
-          <p className="text-lg font-semibold">Carregando catálogo.</p>
-          <p className="text-white/80">
-            {loading
-              ? 'Estamos preparando os ingredientes para você.'
-              : 'Ainda não encontramos ingredientes ativos. Tente novamente ou aguarde alguns instantes.'}
-          </p>
-          {seedInfo && !seedInfo.seeded && (
+        <div className="space-y-4 rounded-2xl border border-dashed border-emerald-400/40 bg-emerald-400/10 p-6 text-white shadow-neon-glow">
+          <div className="space-y-1">
+            <p className="text-lg font-semibold">Catálogo</p>
+            <p className="text-white/80">
+              {catalogStatus === 'missing'
+                ? 'Banco não migrado. Aplique as migrations antes de popular o catálogo.'
+                : loading
+                  ? 'Estamos preparando os ingredientes para você.'
+                  : 'Ainda não encontramos ingredientes ativos. Tente novamente ou peça para popular automaticamente.'}
+            </p>
+          </div>
+
+          {catalogStatus === 'missing' && (
+            <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-white/80">
+              <p className="font-semibold">Tabelas ausentes</p>
+              <p className="text-white/70">{missingTables.join(', ') || 'Verifique migrations pendentes.'}</p>
+              <p className="mt-2 text-white/60">Consulte o README na seção de deploy para aplicar as migrations.</p>
+            </div>
+          )}
+
+          {seedInfo && !seedInfo.seeded && catalogStatus !== 'missing' && (
             <p className="text-sm text-emerald-100/80">
               Auto-seed: {seedInfo.reason === 'env-disabled' ? 'desativado pela configuração' : 'aguardando disponibilidade'}.
             </p>
           )}
+
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={loadCatalog}
-              className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.01]"
+              onClick={() => loadCatalog()}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.01] disabled:opacity-60"
             >
               Tentar novamente
+            </button>
+            <button
+              onClick={handleSeedRequest}
+              disabled={seedLoading || catalogStatus === 'missing'}
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/70"
+            >
+              {seedLoading ? 'Populando catálogo...' : 'Popular catálogo'}
             </button>
           </div>
         </div>
