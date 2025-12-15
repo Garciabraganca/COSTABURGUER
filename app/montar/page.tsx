@@ -44,7 +44,7 @@ export default function MontarPage() {
           </div>
 
           <div className="space-y-6">
-            <SectionCard title="Visualização em Tempo Real" subtitle="Resumo e checkout">
+            <SectionCard title="Sacola e checkout" subtitle="Resumo do que já foi adicionado">
               <div className="space-y-4">
                 <NeonCard
                   title="Itens na sacola"
