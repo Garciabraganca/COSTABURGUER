@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { getIngredientImage } from '@/lib/assets/ingredientImages';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+    },
+  },
+});
 
 const categoriasSeed = [
   { slug: 'pao', nome: 'Pães', cor: '#f5d490', ordem: 10 },
