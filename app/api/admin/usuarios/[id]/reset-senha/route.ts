@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 
-import { hashSenha, isStrongPassword } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import { generateTempPassword } from '@/lib/password';
-import { requireRole } from '@/lib/requireRole';
+import { hashSenha, requireRole } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(_request: Request, { params }: { params: { id: string } }) {
   try {
     if (!prisma) {
       return NextResponse.json(
@@ -17,40 +16,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
       );
     }
 
-    const auth = await requireRole(request, ['ADMIN']);
-    if (auth.ok === false) {
-      return auth.response;
-    }
+    const auth = await requireRole(_request, ['ADMIN']);
+    if (auth.ok === false) return auth.response;
 
-    const { id } = params;
-    const body = await request.json().catch(() => ({}));
-    const { novaSenha } = body ?? {};
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashSenha(tempPassword);
 
-    const senhaFinal = novaSenha || generateTempPassword();
-
-    if (!isStrongPassword(senhaFinal)) {
-      return NextResponse.json(
-        {
-          error:
-            'Senha deve ter ao menos 8 caracteres, uma letra maiúscula e um símbolo.'
-        },
-        { status: 422 }
-      );
-    }
-
-    const passwordHash = await hashSenha(senhaFinal);
     const usuario = await prisma.usuario.update({
-      where: { id },
+      where: { id: params.id },
       data: { passwordHash },
       select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
     });
 
-    return NextResponse.json({ ...usuario, tempPassword: novaSenha ? undefined : senhaFinal });
+    return NextResponse.json({ ...usuario, tempPassword });
   } catch (error) {
-    console.error('Erro ao resetar senha:', error);
-    if ((error as any)?.code === 'P2025') {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
-    }
+    console.error('Erro ao resetar senha', error);
     return NextResponse.json({ error: 'Erro ao resetar senha' }, { status: 500 });
   }
 }
