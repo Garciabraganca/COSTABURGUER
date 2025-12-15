@@ -16,7 +16,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "seed:admin:force": "ts-node prisma/seed-admin-force.ts",
-    "provision:admin": "tsx scripts/provision-admin.ts"
+    "provision:admin": "tsx scripts/provision-admin.ts",
+    "seed:catalogo": "tsx scripts/seed-catalogo.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

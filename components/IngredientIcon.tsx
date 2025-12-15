@@ -3,22 +3,22 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { cn, resolveAssetUrl } from '@/lib/utils';
-import { IngredientCategory } from '@/lib/ingredientsData';
+import { CatalogCategorySlug } from '@/lib/assets/ingredientImages';
 
-const CATEGORY_EMOJIS: Record<IngredientCategory, string> = {
+const CATEGORY_EMOJIS: Record<CatalogCategorySlug, string> = {
   pao: '🍞',
   carne: '🥩',
   queijo: '🧀',
   molho: '🥫',
-  vegetal: '🥬',
-  extra: '✨',
+  vegetais: '🥬',
+  extras: '✨',
   especial: '⭐',
 };
 
 type IngredientIconProps = {
   src?: string | null;
   alt: string;
-  category: IngredientCategory;
+  category: CatalogCategorySlug;
   size?: number;
   className?: string;
 };
