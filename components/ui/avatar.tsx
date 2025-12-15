@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 type AvatarProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -23,11 +24,14 @@ export function Avatar({ className, children, ...props }: AvatarProps) {
 export function AvatarImage({ src, alt }: { src?: string; alt?: string }) {
   if (!src) return null;
   return (
-    <img
+    <Image
       src={src}
       alt={alt ?? ''}
-      className="h-full w-full object-cover"
+      fill
+      sizes="48px"
+      className="object-cover"
       loading="lazy"
+      unoptimized
     />
   );
 }

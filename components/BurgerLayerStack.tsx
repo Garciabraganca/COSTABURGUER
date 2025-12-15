@@ -67,18 +67,33 @@ export function BurgerLayerStack({ ingredients }: { ingredients: LayerIngredient
           className="absolute left-1/2 top-1/2 h-[72%] w-[72%] -translate-x-1/2 -translate-y-1/2 object-contain opacity-50 [animation:spin_18s_linear_infinite]"
           loading="lazy"
         />
-        {sorted.map((ingredient) => {
+        {sorted.map((ingredient, index) => {
           const imageUrl = resolveAssetUrl(getIngredientImage(ingredient.slug));
           const size = resolveSize(ingredient.categoriaSlug, containerSize);
           const baseClass = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_20px_24px_rgba(0,0,0,0.35)]';
+          const wobble = (index - sorted.length / 2) * 2.2;
+          const floatDelay = `${index * 120}ms`;
+
+          if (!imageUrl) {
+            console.warn('[catalog] camada sem imagem', ingredient.slug);
+          }
 
           return imageUrl ? (
             <img
               key={ingredient.id}
               src={imageUrl}
               alt={ingredient.nome}
-              style={{ width: size, zIndex: resolveZIndex(ingredient) }}
-              className={cn(baseClass, 'animate-[fadein_280ms_ease-out]')}
+              style={{
+                width: size,
+                zIndex: resolveZIndex(ingredient),
+                transform: `translate(-50%, -50%) rotate(${wobble}deg)`,
+                animationDelay: `${floatDelay}, 0ms`,
+                animationName: 'float, fadein',
+                animationDuration: '6s, 240ms',
+                animationTimingFunction: 'ease-in-out, ease-out',
+                animationIterationCount: 'infinite, 1',
+              }}
+              className={cn(baseClass)}
               loading="lazy"
             />
           ) : (
@@ -112,6 +127,17 @@ export function BurgerLayerStack({ ingredients }: { ingredients: LayerIngredient
           }
           to {
             transform: translate(-50%, -50%) rotate(360deg);
+          }
+        }
+        @keyframes float {
+          0% {
+            transform: translate(-50%, -50%) rotate(0deg) translateY(0);
+          }
+          50% {
+            transform: translate(-50%, -50%) rotate(2deg) translateY(-6px);
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(0deg) translateY(0);
           }
         }
       `}</style>
