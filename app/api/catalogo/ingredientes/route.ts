@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { fallbackCatalogIngredients } from '@/lib/catalogo/fallbackIngredientes';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   if (!prisma) {
-    return NextResponse.json(
-      { error: 'Banco de dados não configurado' },
-      { status: 503 }
-    );
+    console.warn('Prisma indisponível, servindo catálogo estático de emergência.');
+    return NextResponse.json(fallbackCatalogIngredients, {
+      headers: {
+        'x-catalog-fallback': 'true',
+      },
+    });
   }
 
   try {
@@ -56,9 +59,14 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error('Erro ao buscar ingredientes do catálogo', error);
-    return NextResponse.json(
-      { error: 'Erro ao buscar ingredientes' },
-      { status: 500 }
-    );
+
+    // Em cenários onde o banco apresenta inconsistências (ex: conflitos de chave única),
+    // devolvemos um catálogo estático para não quebrar a experiência do cliente.
+    return NextResponse.json(fallbackCatalogIngredients, {
+      headers: {
+        'x-catalog-fallback': 'true',
+        'x-catalog-error': error instanceof Error ? error.message : 'unknown-error',
+      },
+    });
   }
 }
