@@ -1,0 +1,49 @@
+# ============================================
+# COSTA BURGER — VARIÁVEIS DE AMBIENTE (PROD)
+# ============================================
+
+# Ambiente
+NODE_ENV=production
+
+
+# ============================================
+# BANCO DE DADOS (SUPABASE)
+# ============================================
+
+DATABASE_URL=postgresql://postgres:BAFxsKy0K41G64hc@db.poglogzfpnyedtfohkww.supabase.co:5432/postgres?sslmode=require
+
+
+
+# ============================================
+# AUTENTICAÇÃO / JWT
+# ============================================
+
+JWT_SECRET=MmQoWqI93vKlvcda_JWT_SECRET_PROD
+
+
+# ============================================
+# BOOTSTRAP ADMIN (USO CONTROLADO)
+# ============================================
+
+ADMIN_BOOTSTRAP_KEY=MmQoWqI93vKlvcda_ADMIN_BOOTSTRAP
+
+
+# ============================================
+# WEB PUSH / NOTIFICAÇÕES
+# ============================================
+
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=MmQoWqI93vKlvcda_VAPID_PUBLIC
+VAPID_PRIVATE_KEY=MmQoWqI93vKlvcda_VAPID_PRIVATE
+VAPID_SUBJECT=mailto:contato@costa-burger.com
+
+
+# ============================================
+# OBSERVAÇÕES IMPORTANTES
+# ============================================
+# - Não usar quebra de linha nas variáveis
+# - DATABASE_URL deve usar sslmode=require
+# - ADMIN_BOOTSTRAP_KEY é usada apenas para
+#   criação inicial do ADMIN MÁXIMO
+# - Após tudo funcionar, você pode remover
+#   ADMIN_BOOTSTRAP_KEY da Vercel por segurança
+# ============================================
