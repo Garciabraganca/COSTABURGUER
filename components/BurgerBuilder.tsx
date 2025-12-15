@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IngredientIcon } from './IngredientIcon';
 import { cn } from '@/lib/utils';
 import { BurgerLayerStack, LayerIngredient } from './BurgerLayerStack';
@@ -154,6 +154,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [ingredientsByCategory, setIngredientsByCategory] = useState<Record<string, CatalogIngredient[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [seedInfo, setSeedInfo] = useState<{ seeded?: boolean; reason?: string } | undefined>();
   const warnedMissingImage = useRef(new Set<string>());
 
   const totalPrice = useMemo(() => selectedIngredients.reduce((total, ing) => total + (ing.preco ?? 0), 0), [selectedIngredients]);
@@ -177,61 +178,63 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     [categories]
   );
 
-  useEffect(() => {
-    async function loadCatalog() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [catRes, ingRes] = await Promise.all([
-          fetch('/api/catalogo/categorias'),
-          fetch('/api/catalogo/ingredientes'),
-        ]);
+  const loadCatalog = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/catalog');
 
-        if (!catRes.ok) {
-          throw new Error('Não foi possível carregar categorias');
-        }
-        if (!ingRes.ok) {
-          throw new Error('Não foi possível carregar ingredientes');
-        }
-
-        const catData: CatalogCategory[] = await catRes.json();
-        const ingData: Array<Omit<CatalogIngredient, 'categoriaSlug'> & { categoriaSlug?: CatalogCategorySlug | null }> =
-          await ingRes.json();
-
-        setCategories(catData);
-
-        const grouped: Record<string, CatalogIngredient[]> = {};
-
-        ingData.forEach((ing) => {
-          const categoriaSlug = (ing.categoriaSlug || ing.categoria?.slug || 'extras') as CatalogCategorySlug;
-          const manifestImage = getIngredientImage(ing.slug) || getIngredientImage(categoriaSlug);
-          const imagem = ing.imagem || manifestImage || null;
-
-          if (!imagem && !warnedMissingImage.current.has(ing.slug)) {
-            console.warn('[catalog] faltando imagem para', ing.slug);
-            warnedMissingImage.current.add(ing.slug);
-          }
-
-          const normalized: CatalogIngredient = {
-            ...ing,
-            categoriaSlug,
-            imagem,
-          };
-
-          grouped[categoriaSlug] = grouped[categoriaSlug] ? [...grouped[categoriaSlug], normalized] : [normalized];
-        });
-
-        setIngredientsByCategory(grouped);
-      } catch (err) {
-        console.error(err);
-        setError('Não foi possível carregar o catálogo.');
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Não foi possível carregar o catálogo');
       }
-    }
 
-    loadCatalog();
+      const data: {
+        ok: boolean;
+        categories: CatalogCategory[];
+        items: Array<Omit<CatalogIngredient, 'categoriaSlug'> & { categoriaSlug?: CatalogCategorySlug | null }>;
+        seeded?: { seeded?: boolean; reason?: string };
+      } = await response.json();
+
+      if (!data.ok) {
+        throw new Error('Resposta inesperada ao carregar catálogo');
+      }
+
+      setSeedInfo(data.seeded);
+      setCategories(data.categories || []);
+
+      const grouped: Record<string, CatalogIngredient[]> = {};
+
+      (data.items || []).forEach((ing) => {
+        const categoriaSlug = (ing.categoriaSlug || ing.categoria?.slug || 'extras') as CatalogCategorySlug;
+        const manifestImage = getIngredientImage(ing.slug) || getIngredientImage(categoriaSlug);
+        const imagem = ing.imagem || manifestImage || null;
+
+        if (!imagem && !warnedMissingImage.current.has(ing.slug)) {
+          console.warn('[catalog] faltando imagem para', ing.slug);
+          warnedMissingImage.current.add(ing.slug);
+        }
+
+        const normalized: CatalogIngredient = {
+          ...ing,
+          categoriaSlug,
+          imagem,
+        };
+
+        grouped[categoriaSlug] = grouped[categoriaSlug] ? [...grouped[categoriaSlug], normalized] : [normalized];
+      });
+
+      setIngredientsByCategory(grouped);
+    } catch (err) {
+      console.error(err);
+      setError('Catálogo indisponível no momento. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
 
   const startFlow = () => {
     setHasStarted(true);
@@ -286,7 +289,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const activeCategory =
     activeCategoryIndex !== null ? sortedCategories[activeCategoryIndex] : null;
 
-  const emptyCatalog = !loading && categories.length === 0;
+  const hasCatalog = Object.values(ingredientsByCategory).some((list) => list.length > 0);
 
   return (
     <div className="space-y-8 text-white">
@@ -322,23 +325,31 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         </div>
       </section>
 
-      {emptyCatalog && (
-        <div className="rounded-2xl border border-dashed border-emerald-400/40 bg-emerald-400/10 p-6 text-white shadow-neon-glow">
-          <p className="text-lg font-semibold">Nenhum item encontrado no catálogo.</p>
-          <p className="mt-1 text-white/80">Rode o seed recomendado e atualize esta página.</p>
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText('npm run seed:catalogo').catch(() => undefined);
-              alert('Execute "npm run seed:catalogo" no servidor para popular o catálogo.');
-            }}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
-          >
-            Popular catálogo
-          </button>
+      {!hasCatalog && (
+        <div className="space-y-3 rounded-2xl border border-dashed border-emerald-400/40 bg-emerald-400/10 p-6 text-white shadow-neon-glow">
+          <p className="text-lg font-semibold">Carregando catálogo.</p>
+          <p className="text-white/80">
+            {loading
+              ? 'Estamos preparando os ingredientes para você.'
+              : 'Ainda não encontramos ingredientes ativos. Tente novamente ou aguarde alguns instantes.'}
+          </p>
+          {seedInfo && !seedInfo.seeded && (
+            <p className="text-sm text-emerald-100/80">
+              Auto-seed: {seedInfo.reason === 'env-disabled' ? 'desativado pela configuração' : 'aguardando disponibilidade'}.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={loadCatalog}
+              className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.01]"
+            >
+              Tentar novamente
+            </button>
+          </div>
         </div>
       )}
 
-      {!emptyCatalog && (
+      {hasCatalog && (
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
             <div className="flex items-start justify-between gap-4">

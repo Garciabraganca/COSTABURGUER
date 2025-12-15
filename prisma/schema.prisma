@@ -323,3 +323,12 @@ model LocalizacaoEntrega {
   @@index([entregaId])
   @@index([createdAt])
 }
+
+model CatalogSeedState {
+  key       String   @id
+  doneAt    DateTime? @map("done_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("catalog_seed_state")
+}
