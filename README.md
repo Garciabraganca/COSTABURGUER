@@ -43,6 +43,11 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
 - O avanço de status em `/pedido/[id]` é simulado com PATCH na mesma rota.
 - Integração real com Mercado Pago/WhatsApp pode ser adicionada nos endpoints existentes.
 
+### Auto-seed do catálogo (produção)
+- Defina `AUTO_SEED_CATALOG=true` na Vercel antes de abrir `/montar` em um banco vazio.
+- O app detecta catálogo vazio, popula categorias e ingredientes com os assets existentes em `public/ingredients` e grava o lock para não repetir.
+- Depois de confirmado o preenchimento, a flag pode voltar para `false`.
+
 ## Testando o fluxo ponta a ponta
 1. Monte um burger em `/montar` e siga até **Pagamento** para enviar o payload real para `POST /api/pedidos`.
 2. Acompanhe em `/pedido/[id]` e avance status no painel da cozinha `/cozinha` (CONFIRMADO → PREPARANDO → PRONTO).
