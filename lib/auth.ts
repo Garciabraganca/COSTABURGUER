@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 
 import { gerarJwt, getJwtSecret, verificarJwt } from './jwt';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export const USER_ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -22,6 +23,29 @@ export async function hashSenha(plaintext: string) {
 
 export async function compararSenha(plaintext: string, hash: string) {
   return bcrypt.compare(plaintext, hash);
+}
+
+export async function safeGetSessionFromCookies(): Promise<
+  | {
+      id: string;
+      role: UserRole;
+    }
+  | null
+> {
+  try {
+    const token = cookies().get('token')?.value;
+    if (!token) return null;
+
+    const payload = await verificarJwt(token);
+
+    if (payload?.id && payload?.role) {
+      return { id: payload.id, role: payload.role };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getSessionFromCookie(request: Request | { headers: Headers }) {

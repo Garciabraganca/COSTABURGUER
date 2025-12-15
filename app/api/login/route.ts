@@ -11,17 +11,17 @@ export async function POST(request: Request) {
   try {
     if (!prisma) {
       return NextResponse.json(
-        { error: 'Banco não configurado (DATABASE_URL)' },
+        { ok: false, message: 'Banco não configurado (DATABASE_URL)' },
         { status: 503 }
       );
     }
 
-    const body = await request.json();
-    const { email, senha } = body;
+    const body = await request.json().catch(() => null);
+    const { email, senha } = body || {};
 
     if (!email || !senha) {
       return NextResponse.json(
-        { error: 'Email e senha são obrigatórios' },
+        { ok: false, message: 'Email e senha são obrigatórios' },
         { status: 400 }
       );
     }
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     if (!usuario || !usuario.ativo) {
       return NextResponse.json(
-        { error: 'Credenciais inválidas' },
+        { ok: false, message: 'Credenciais inválidas' },
         { status: 401 }
       );
     }
@@ -39,14 +39,14 @@ export async function POST(request: Request) {
 
     if (!senhaValida) {
       return NextResponse.json(
-        { error: 'Credenciais inválidas' },
+        { ok: false, message: 'Credenciais inválidas' },
         { status: 401 }
       );
     }
 
     const token = await gerarJwt({ id: usuario.id, role: usuario.role });
 
-    const response = NextResponse.json({ role: usuario.role });
+    const response = NextResponse.json({ ok: true, role: usuario.role });
     response.headers.set(
       'Set-Cookie',
       `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800`
@@ -57,14 +57,14 @@ export async function POST(request: Request) {
     if (error instanceof Prisma.PrismaClientInitializationError) {
       console.error('Banco de dados indisponível:', error);
       return NextResponse.json(
-        { error: 'Banco de dados indisponível. Tente novamente mais tarde.' },
+        { ok: false, message: 'Banco de dados indisponível. Tente novamente mais tarde.' },
         { status: 503 }
       );
     }
 
     console.error('Erro ao realizar login:', error);
     return NextResponse.json(
-      { error: 'Erro ao realizar login' },
+      { ok: false, message: 'Erro ao realizar login' },
       { status: 500 }
     );
   }
