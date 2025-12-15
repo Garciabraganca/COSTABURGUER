@@ -1,18 +1,17 @@
 "use client";
 
-import { useMemo, useState, useEffect } from 'react';
-import Image from 'next/image';
-import IngredientImage from './IngredientImage';
+import { useMemo, useState } from 'react';
+import { IngredientIcon } from './IngredientIcon';
 import {
   Ingredient,
   IngredientCategory,
   CATEGORIAS,
-  HAMBURGER_BASE_IMAGE,
   getIngredientePorId,
   getIngredientesPorCategoria,
   calcularPrecoTotal,
 } from '@/lib/ingredientsData';
 import { cn } from '@/lib/utils';
+import { BurgerStackPreview } from './widgets/BurgerStackPreview';
 
 const CATEGORY_FLOW: IngredientCategory[] = [
   'pao',
@@ -79,13 +78,13 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, is
               className="group relative flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-white shadow-neon-glow transition hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-emerald-400/30"
               onClick={() => onSelect(ing.id)}
             >
-              <div className="relative mb-3 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-black/30 ring-1 ring-white/10">
-                <IngredientImage
-                  src={ing.image}
-                  alt={ing.name}
-                  size={95}
-                />
-              </div>
+              <IngredientIcon
+                src={ing.image}
+                alt={ing.name}
+                category={ing.category}
+                size={104}
+                className="mb-3 h-28 w-28"
+              />
               <div className="w-full text-center">
                 <span className="block text-base font-semibold">{ing.name}</span>
                 <span className={cn('mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold', ing.price === 0 ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-white/80')}>
@@ -102,58 +101,6 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, is
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function SpinningBurger({ hasIngredients }: { hasIngredients: boolean }) {
-  return (
-    <div className={cn('relative mx-auto flex h-72 w-72 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-neon-glow', hasIngredients ? 'ring-2 ring-emerald-400/50' : 'ring-1 ring-white/10')}>
-      <div className="absolute inset-[-14%] rounded-full bg-emerald-400/10 blur-3xl" aria-hidden />
-      <div className="relative flex h-64 w-64 items-center justify-center overflow-hidden rounded-full bg-black/30 ring-1 ring-white/10">
-        <div className="absolute inset-0 animate-[spin_18s_linear_infinite] opacity-20">
-          <div className="absolute inset-0 rounded-full border border-dashed border-white/20" />
-        </div>
-        <Image
-          src={HAMBURGER_BASE_IMAGE}
-          alt="Hambúrguer"
-          width={260}
-          height={260}
-          style={{ objectFit: 'contain' }}
-          priority
-          unoptimized
-        />
-      </div>
-    </div>
-  );
-}
-
-function IngredientOrbit({ items }: { items: Ingredient[] }) {
-  if (items.length === 0) return null;
-
-  return (
-    <div className="relative mx-auto mt-6 h-80 w-full max-w-xl">
-      {items.map((ingredient, index) => {
-        const angle = (360 / items.length) * index;
-        const radius = 140;
-        const radians = (angle * Math.PI) / 180;
-        const x = Math.cos(radians) * radius;
-        const y = Math.sin(radians) * radius;
-
-        return (
-          <div
-            key={`${ingredient.id}-${index}`}
-            className="absolute flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-white/10 shadow-lg shadow-black/30 backdrop-blur"
-            style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }}
-          >
-            <IngredientImage
-              src={ingredient.image}
-              alt={ingredient.name}
-              size={56}
-            />
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -184,7 +131,13 @@ function IngredientsList({
           key={`${ing.id}-${index}`}
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-medium text-white shadow-sm shadow-black/30 backdrop-blur"
         >
-          <span className="text-base">{CATEGORY_ICONS[ing.category]}</span>
+          <IngredientIcon
+            src={ing.image}
+            alt={ing.name}
+            category={ing.category}
+            size={28}
+            className="h-7 w-7 border-none bg-white/10 text-xs"
+          />
           <span>{ing.name}</span>
           <button
             className="rounded-full bg-white/10 px-2 py-1 text-white/70 transition hover:bg-red-500/20 hover:text-white"
@@ -295,7 +248,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
       {/* Main Builder Area */}
       <section className="grid gap-6 lg:grid-cols-2">
-        {/* Spinning Burger Preview */}
+        {/* Layered Burger Preview */}
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 text-lg font-semibold">
@@ -311,8 +264,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
           </div>
 
           <div className="mt-6 flex flex-col items-center gap-4">
-            <SpinningBurger hasIngredients={sortedIngredients.length > 0} />
-            <IngredientOrbit items={sortedIngredients} />
+            <BurgerStackPreview ingredients={sortedIngredients} />
           </div>
 
           <div className="mt-6">
