@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import OrderTimeline, { OrderStatus } from '@/components/OrderTimeline';
 import DeliveryTracker from '@/components/DeliveryTracker';
+import { SectionCard } from '@/components/widgets/SectionCard';
+import { StepsWidget } from '@/components/widgets/StepsWidget';
 
 const statusOrder: OrderStatus[] = ['CONFIRMADO', 'PREPARANDO', 'PRONTO', 'EM_ENTREGA', 'ENTREGUE'];
 
@@ -83,73 +85,115 @@ export default function PedidoPage() {
   }
 
   if (error && !pedido) {
-    return <p className="error-text">{error}</p>;
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black px-4 py-10 text-white">
+        <div className="mx-auto max-w-3xl">
+          <SectionCard title="Status do Pedido" subtitle="Algo deu errado" className="bg-white/5">
+            <p className="text-sm text-red-200">{error}</p>
+          </SectionCard>
+        </div>
+      </main>
+    );
   }
 
   if (!pedido) {
-    return <p>Carregando dados do pedido...</p>;
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black px-4 py-10 text-white">
+        <div className="mx-auto max-w-3xl">
+          <SectionCard title="Status do Pedido" subtitle="Carregando" className="bg-white/5">
+            <p className="text-sm text-white/70">Carregando dados do pedido...</p>
+          </SectionCard>
+        </div>
+      </main>
+    );
   }
 
   const mostrarRastreamento = pedido.status === 'EM_ENTREGA' && pedido.tipoEntrega === 'ENTREGA';
+  const currentIndex = statusOrder.indexOf(pedido.status as OrderStatus);
+  const completedSteps = currentIndex >= 0 ? currentIndex + 1 : 1;
 
   return (
-    <div>
-      <h2>Pedido #{pedido.numero || pedido.id.slice(-6)}</h2>
-      <p className="step-subtitle">Status atual: {pedido.status}</p>
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black px-4 py-10 text-white">
+      <div className="mx-auto flex max-w-4xl flex-col gap-6">
+        <header className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/60">Pedido #{pedido.numero || pedido.id.slice(-6)}</p>
+          <h2 className="text-3xl font-black">Status: {pedido.status}</h2>
+          {error && <p className="text-sm text-red-200">{error}</p>}
+        </header>
 
-      <OrderTimeline currentStatus={pedido.status as OrderStatus} />
-
-      {/* Rastreamento de entrega em tempo real */}
-      {mostrarRastreamento && (
-        <DeliveryTracker pedidoId={pedido.id} />
-      )}
-
-      <section className="summary">
-        <h3>Itens</h3>
-        <ul>
-          {pedido.itens?.map((item, idx: number) => (
-            <li key={idx}>
-              {item.nome} — R$ {Number(item.preco).toFixed(2)}
-            </li>
-          ))}
-        </ul>
-        <p>Total: R$ {Number(pedido.total).toFixed(2)}</p>
-      </section>
-
-      {/* Informações de entrega */}
-      <section className="summary" style={{ marginTop: '1rem' }}>
-        <h3>Entrega</h3>
-        <p><strong>Cliente:</strong> {pedido.nome}</p>
-        <p><strong>Celular:</strong> {pedido.celular}</p>
-        <p><strong>Tipo:</strong> {pedido.tipoEntrega === 'RETIRADA' ? 'Retirada no balcão' : 'Delivery'}</p>
-        {pedido.tipoEntrega === 'ENTREGA' && (
-          <p><strong>Endereço:</strong> {pedido.endereco}</p>
-        )}
-      </section>
-
-      {error && <p className="error-text">{error}</p>}
-
-      <button className="btn primary" onClick={advanceStatus} disabled={pedido.status === 'ENTREGUE' || loading}>
-        {pedido.status === 'ENTREGUE' ? 'Pedido finalizado' : 'Simular avanço de status'}
-      </button>
-
-      {/* Mensagem de conclusão */}
-      {pedido.status === 'ENTREGUE' && (
-        <div style={{
-          background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
-          color: '#fff',
-          padding: '1.5rem',
-          borderRadius: '0.75rem',
-          textAlign: 'center',
-          marginTop: '1.5rem'
-        }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Pedido Entregue!</div>
-          <div style={{ marginTop: '0.5rem', opacity: 0.9 }}>
-            Obrigado por pedir na Costa Burger!
+        <SectionCard title="Acompanhamento" subtitle="Linha do tempo" className="bg-white/5">
+          <div className="space-y-6">
+            <StepsWidget
+              title="Status do pedido"
+              metaLabel={`${statusOrder.length} etapas`}
+              current={completedSteps}
+              total={statusOrder.length}
+              completedSteps={completedSteps}
+              totalSteps={statusOrder.length}
+              highlight={pedido.status}
+            />
+            <OrderTimeline currentStatus={pedido.status as OrderStatus} />
+            {mostrarRastreamento ? (
+              <DeliveryTracker pedidoId={pedido.id} />
+            ) : (
+              <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                Nenhum pedido ativo em rota.
+              </div>
+            )}
           </div>
+        </SectionCard>
+
+        <SectionCard title="Detalhes do pedido" subtitle="Itens e valores" className="bg-white/5">
+          <div className="space-y-4">
+            {pedido.itens && pedido.itens.length > 0 ? (
+              <ul className="space-y-2 text-sm">
+                {pedido.itens.map((item, idx: number) => (
+                  <li key={idx} className="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 px-3 py-2">
+                    <span>{item.nome}</span>
+                    <span className="font-semibold">R$ {Number(item.preco).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-white/70">Nenhum item listado.</p>
+            )}
+            <div className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 text-base font-semibold">
+              <span>Total</span>
+              <span>R$ {Number(pedido.total).toFixed(2)}</span>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Entrega" subtitle="Dados do cliente" className="bg-white/5">
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <p><span className="text-white/60">Cliente:</span> {pedido.nome}</p>
+            <p><span className="text-white/60">Celular:</span> {pedido.celular}</p>
+            <p><span className="text-white/60">Tipo:</span> {pedido.tipoEntrega === 'RETIRADA' ? 'Retirada no balcão' : 'Delivery'}</p>
+            {pedido.tipoEntrega === 'ENTREGA' && (
+              <p className="sm:col-span-2"><span className="text-white/60">Endereço:</span> {pedido.endereco}</p>
+            )}
+          </div>
+        </SectionCard>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/60 disabled:shadow-none"
+            onClick={advanceStatus}
+            disabled={pedido.status === 'ENTREGUE' || loading}
+          >
+            {pedido.status === 'ENTREGUE' ? 'Pedido finalizado' : 'Simular avanço de status'}
+          </button>
+          {loading && <span className="text-xs text-white/70">Atualizando status...</span>}
         </div>
-      )}
-    </div>
+
+        {pedido.status === 'ENTREGUE' && (
+          <div className="rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-400 p-6 text-center text-slate-950 shadow-lg shadow-emerald-500/30">
+            <div className="text-3xl">✅</div>
+            <div className="text-xl font-bold">Pedido Entregue!</div>
+            <div className="mt-2 text-sm">Obrigado por pedir na Costa Burger!</div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
