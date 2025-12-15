@@ -22,9 +22,11 @@ type HealthSuccess = {
   ok: true;
   runtime: 'vercel' | 'local';
   databaseUrlHost: string | null;
+  databaseUrlPort: number | null;
   databaseUrlHasSslmode: boolean;
   databaseUrlHasPgbouncer: boolean;
   directUrlHost: string | null;
+  directUrlPort: number | null;
   directUrlPresent: boolean;
   databaseUsage: string;
   prismaClientVersion: string;
@@ -39,9 +41,11 @@ type HealthFailure = {
   ok: false;
   runtime: 'vercel' | 'local';
   databaseUrlHost: string | null;
+  databaseUrlPort: number | null;
   databaseUrlHasSslmode: boolean;
   databaseUrlHasPgbouncer: boolean;
   directUrlHost: string | null;
+  directUrlPort: number | null;
   directUrlPresent: boolean;
   databaseUsage: string;
   prismaClientVersion: string;
@@ -134,9 +138,11 @@ type Diagnostics = {
   runtime: 'vercel' | 'local';
   prismaClientVersion: string;
   databaseUrlHost: string | null;
+  databaseUrlPort: number | null;
   databaseUrlHasSslmode: boolean;
   databaseUrlHasPgbouncer: boolean;
   directUrlHost: string | null;
+  directUrlPort: number | null;
   directUrlPresent: boolean;
   databaseUrlValidation: ReturnType<typeof validateDatabaseUrl>;
 };
@@ -151,6 +157,11 @@ function buildDiagnostics(): Diagnostics {
       ? validationDetails.host
       : null
     : databaseUrlValidation.host;
+  const databaseUrlPort = databaseUrlValidation.ok === false
+    ? typeof validationDetails?.port === 'number'
+      ? validationDetails.port
+      : null
+    : databaseUrlValidation.port;
   const databaseUrlHasSslmode = databaseUrlValidation.ok === false
     ? Boolean(validationDetails?.hasSslmode)
     : databaseUrlValidation.hasSslmode;
@@ -158,15 +169,18 @@ function buildDiagnostics(): Diagnostics {
     ? Boolean(validationDetails?.hasPgbouncer)
     : databaseUrlValidation.hasPgbouncer;
   const directUrlHost = safeExtractHost(directUrl);
+  const directUrlPort = safeExtractPort(directUrl);
   const directUrlPresent = Boolean(directUrl);
   const runtime: 'vercel' | 'local' = process.env.VERCEL ? 'vercel' : 'local';
   const prismaClientVersion = prismaPackage.version ?? 'unknown';
 
   return {
     databaseUrlHost,
+    databaseUrlPort,
     databaseUrlHasSslmode,
     databaseUrlHasPgbouncer,
     directUrlHost,
+    directUrlPort,
     directUrlPresent,
     runtime,
     prismaClientVersion,
@@ -179,9 +193,11 @@ function toResponseDiagnostics(diagnostics: Diagnostics) {
     runtime,
     prismaClientVersion,
     databaseUrlHost,
+    databaseUrlPort,
     databaseUrlHasSslmode,
     databaseUrlHasPgbouncer,
     directUrlHost,
+    directUrlPort,
     directUrlPresent
   } = diagnostics;
 
@@ -189,9 +205,11 @@ function toResponseDiagnostics(diagnostics: Diagnostics) {
     runtime,
     prismaClientVersion,
     databaseUrlHost,
+    databaseUrlPort,
     databaseUrlHasSslmode,
     databaseUrlHasPgbouncer,
     directUrlHost,
+    directUrlPort,
     directUrlPresent,
     databaseUsage: buildDatabaseUsageMessage(directUrlPresent)
   };
@@ -203,6 +221,18 @@ function safeExtractHost(url: string | undefined): string | null {
   try {
     const parsed = new URL(url);
     return parsed.hostname;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function safeExtractPort(url: string | undefined): number | null {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.port) return Number(parsed.port);
+    return parsed.protocol === 'postgresql:' ? 5432 : null;
   } catch (_error) {
     return null;
   }

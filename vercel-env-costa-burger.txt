@@ -10,7 +10,8 @@ NODE_ENV=production
 # BANCO DE DADOS (SUPABASE)
 # ============================================
 
-DATABASE_URL=postgresql://postgres:BAFxsKy0K41G64hc@db.poglogzfpnyedtfohkww.supabase.co:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres:BAFxsKy0K41G64hc@poglogzfpnyedtfohkww.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
+DIRECT_URL=postgresql://postgres:BAFxsKy0K41G64hc@db.poglogzfpnyedtfohkww.supabase.co:5432/postgres?sslmode=require
 
 
 
