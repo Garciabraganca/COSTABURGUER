@@ -136,9 +136,17 @@ type Diagnostics = {
 function buildDiagnostics(): Diagnostics {
   const databaseUrl = process.env.DATABASE_URL;
   const databaseUrlValidation = validateDatabaseUrl(databaseUrl);
-  const databaseUrlHost = databaseUrlValidation.parsed.host;
-  const databaseUrlHasSslmode = databaseUrlValidation.parsed.hasSslmode;
-  const databaseUrlHasPgbouncer = databaseUrlValidation.parsed.hasPgbouncer;
+  const databaseUrlHost = databaseUrlValidation.ok
+    ? databaseUrlValidation.host
+    : typeof databaseUrlValidation.details?.host === 'string'
+      ? databaseUrlValidation.details.host
+      : null;
+  const databaseUrlHasSslmode = databaseUrlValidation.ok
+    ? databaseUrlValidation.hasSslmode
+    : Boolean(databaseUrlValidation.details?.hasSslmode);
+  const databaseUrlHasPgbouncer = databaseUrlValidation.ok
+    ? databaseUrlValidation.hasPgbouncer
+    : Boolean(databaseUrlValidation.details?.hasPgbouncer);
   const runtime: 'vercel' | 'local' = process.env.VERCEL ? 'vercel' : 'local';
   const prismaClientVersion = prismaPackage.version ?? 'unknown';
 
