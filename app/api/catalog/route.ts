@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ensureCatalogSeeded } from '@/lib/catalog/seed';
+import { catalogTablesExist, ensureCatalogSeeded } from '@/lib/catalog/seed';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   if (!prisma) {
     return NextResponse.json({ ok: false, categories: [], items: [] }, { status: 503 });
+  }
+
+  const tablesReady = await catalogTablesExist(prisma);
+  if (!tablesReady) {
+    return NextResponse.json({
+      ok: true,
+      categories: [],
+      items: [],
+      seeded: { seeded: false, reason: 'missing-tables' },
+    });
   }
 
   let seeded;

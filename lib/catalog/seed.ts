@@ -10,8 +10,28 @@ type SeedResult = {
   reason?: string;
 };
 
+export async function catalogTablesExist(prisma: PrismaClient) {
+  try {
+    const result =
+      await prisma.$queryRaw<{ categoria: string | null; ingrediente: string | null }[]>`
+        SELECT
+          to_regclass('public."Categoria"') AS categoria,
+          to_regclass('public."Ingrediente"') AS ingrediente;
+      `;
+
+    const row = result?.[0];
+    return Boolean(row?.categoria && row?.ingrediente);
+  } catch (error) {
+    console.error('[catalog] erro ao verificar tabelas', error);
+    return false;
+  }
+}
+
 export async function ensureCatalogSeeded(prisma?: PrismaClient | null): Promise<SeedResult> {
   if (!prisma) return { seeded: false, reason: 'no-prisma' };
+
+  const tablesReady = await catalogTablesExist(prisma);
+  if (!tablesReady) return { seeded: false, reason: 'missing-tables' };
 
   const activeItems = await prisma.ingrediente.count({ where: { ativo: true } });
   if (activeItems > 0) return { seeded: false, reason: 'catalog-not-empty' };
