@@ -138,10 +138,19 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   const updateCustomer = (data: Partial<Customer>) => setCustomer((prev) => ({ ...prev, ...data }));
 
   const buildOrderPayload = () => ({
-    items: cart,
-    extras: extrasSelecionados,
-    total: cartSubtotal + deliveryFee,
-    customer,
+    nome: customer.nome || 'Cliente',
+    celular: customer.celular || '',
+    endereco: [customer.rua, customer.bairro, customer.complemento, customer.referencia].filter(Boolean).join(', '),
+    tipoEntrega: customer.tipoEntrega || 'ENTREGA',
+    burger: {
+      nome: 'Burger personalizado',
+      quantidade: cart.length || 1,
+      ingredientes: cart.flatMap((item, idx) =>
+        item.ingredientes.map((id, orderIndex) => ({ ingredienteId: id, quantidade: 1, orderIndex: orderIndex + idx }))
+      ),
+    },
+    acompanhamentos: extrasSelecionados.map((id) => ({ acompanhamentoId: id, quantidade: 1 })),
+    observacoes: customer.referencia,
   });
 
   const resetAfterOrder = () => {

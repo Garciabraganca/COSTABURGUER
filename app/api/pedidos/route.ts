@@ -5,35 +5,34 @@ import pushStore from "@/lib/pushStore";
 import { notifyPedidoStatus } from "@/lib/notifyPedido";
 import { toPrismaJson } from "@/lib/json";
 
-// Tipos para os itens do pedido
-interface BurgerItemPayload {
-  nome: string;
-  preco: number;
-  ingredientes?: string[]; // IDs dos ingredientes usados
-  selecionados?: string[]; // Alias para ingredientes
-  camadas?: Record<string, { id: string; nome: string; preco: number }>;
-}
-
-interface AcompanhamentoPayload {
-  id: string;
+type IngredientePayload = {
+  ingredienteId: string;
   quantidade?: number;
-}
+  orderIndex?: number;
+};
 
-interface OrderPayload {
+type BurgerPayload = {
+  nome?: string;
+  quantidade?: number;
+  ingredientes: IngredientePayload[];
+};
+
+type AcompanhamentoPayload = {
+  acompanhamentoId: string;
+  quantidade?: number;
+};
+
+type OrderPayload = {
   nome: string;
   celular: string;
   endereco: string;
   tipoEntrega: string;
-  total: number;
-  subtotal?: number;
-  taxaEntrega?: number;
-  desconto?: number;
-  itens: BurgerItemPayload[];
-  extras?: AcompanhamentoPayload[];
-  acompanhamentos?: AcompanhamentoPayload[];
   observacoes?: string;
+  burger?: BurgerPayload;
+  burgers?: BurgerPayload[];
+  acompanhamentos?: AcompanhamentoPayload[];
   pushEndpoint?: string;
-}
+};
 
 export async function GET() {
   if (!prisma) {
@@ -70,10 +69,13 @@ export async function POST(req: Request) {
   const data: OrderPayload = await req.json();
   const { pushEndpoint, ...orderData } = data;
 
+  if (!orderData.nome || !orderData.celular || !orderData.endereco || !orderData.tipoEntrega) {
+    return NextResponse.json({ ok: false, message: "Dados obrigatórios ausentes" }, { status: 400 });
+  }
+
   let pedido;
 
   if (!prisma) {
-    // Demo mode - store in memory (sem cálculo de custos)
     const id = `demo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     pedido = {
       id,
@@ -83,140 +85,104 @@ export async function POST(req: Request) {
       celular: orderData.celular,
       endereco: orderData.endereco,
       tipoEntrega: orderData.tipoEntrega,
-      total: orderData.total,
-      itens: orderData.itens,
+      total: 0,
+      itens: [],
       status: "CONFIRMADO"
     };
     memoryStore.set(id, pedido);
   } else {
-    // Modo com banco de dados - calcula custos e atualiza estoque
     pedido = await criarPedidoComCustos(orderData);
   }
 
-  // Vincula a subscription do cliente ao pedido (para notificações futuras)
   if (pushEndpoint) {
     pushStore.linkToPedido(pushEndpoint, pedido.id);
-    console.log(`[Pedido ${pedido.id}] Subscription vinculada: ${pushEndpoint.slice(-20)}...`);
   }
 
-  // Envia notificação de confirmação
   try {
-    const result = await notifyPedidoStatus(pedido.id, "CONFIRMADO");
-    console.log(`[Pedido ${pedido.id}] Notificação de confirmação enviada: ${result.sent} dispositivo(s)`);
+    await notifyPedidoStatus(pedido.id, "CONFIRMADO");
   } catch (error) {
     console.error(`[Pedido ${pedido.id}] Erro ao enviar notificação de confirmação:`, error);
   }
 
-  return NextResponse.json(pedido, { status: 201 });
+  return NextResponse.json({ ok: true, pedidoId: pedido.id, numero: pedido.numero, status: pedido.status }, { status: 201 });
 }
 
-// Função para criar pedido com cálculo de custos e atualização de estoque
-async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'>) {
-  // Coletar todos os IDs de ingredientes e acompanhamentos usados
-  const ingredienteSlugs = new Set<string>();
-  const acompanhamentoSlugs = new Set<string>();
+async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint">) {
+  const burgersPayload = orderData.burgers || (orderData.burger ? [orderData.burger] : []);
 
-  // Extrair slugs dos burgers
-  for (const burger of orderData.itens || []) {
-    const ingredientesIds = burger.ingredientes || burger.selecionados || [];
-    for (const id of ingredientesIds) {
-      ingredienteSlugs.add(id);
-    }
+  if (!burgersPayload.length) {
+    throw new Error("Nenhum burger informado");
   }
 
-  // Extrair slugs dos acompanhamentos
-  const acompanhamentosPayload = orderData.extras || orderData.acompanhamentos || [];
-  for (const ac of acompanhamentosPayload) {
-    acompanhamentoSlugs.add(ac.id);
-  }
+  const ingredientesIds = burgersPayload.flatMap(b => b.ingredientes?.map(i => i.ingredienteId) || []);
+  const acompanhamentosIds = orderData.acompanhamentos?.map(a => a.acompanhamentoId) || [];
 
-  // Buscar ingredientes do banco (por slug)
-  const ingredientesDB = ingredienteSlugs.size > 0
-    ? await prisma!.ingrediente.findMany({
-        where: { slug: { in: Array.from(ingredienteSlugs) } }
-      })
-    : [];
+  const ingredientesDB = await prisma!.ingrediente.findMany({
+    where: { id: { in: ingredientesIds } }
+  });
+  const acompanhamentoDB = await prisma!.acompanhamento.findMany({
+    where: { id: { in: acompanhamentosIds } }
+  });
 
-  // Buscar acompanhamentos do banco (por slug)
-  const acompanhamentosDB = acompanhamentoSlugs.size > 0
-    ? await prisma!.acompanhamento.findMany({
-        where: { slug: { in: Array.from(acompanhamentoSlugs) } }
-      })
-    : [];
+  const ingredienteMap = new Map(ingredientesDB.map(i => [i.id, i]));
+  const acompanhamentoMap = new Map(acompanhamentoDB.map(a => [a.id, a]));
 
-  // Mapear para acesso rápido
-  const ingredienteMap = new Map<string, (typeof ingredientesDB)[number]>(
-    ingredientesDB.map(i => [i.slug, i])
-  );
-  const acompanhamentoMap = new Map<string, (typeof acompanhamentosDB)[number]>(
-    acompanhamentosDB.map(a => [a.slug, a])
-  );
+  let subtotal = 0;
+  let custoTotal = 0;
 
-  // Calcular custos
-  let custoTotalBurgers = 0;
-  let custoTotalAcompanhamentos = 0;
+  const burgersData = burgersPayload.map((burger, idx) => {
+    const quantidadeBurger = burger.quantidade ?? 1;
+    let burgerPreco = 0;
+    let burgerCusto = 0;
 
-  // Preparar dados dos burgers com custos
-  const burgersData = (orderData.itens || []).map((burger, index) => {
-    const ingredientesIds = burger.ingredientes || burger.selecionados || [];
-    let custoBurger = 0;
+    const ingredientesRelacao = (burger.ingredientes || []).map(rel => {
+      const ing = ingredienteMap.get(rel.ingredienteId);
+      const quantidade = rel.quantidade ?? 1;
+      if (!ing) return null;
+      burgerPreco += ing.preco * quantidade;
+      burgerCusto += ing.custo * quantidade;
+      return {
+        ingredienteId: ing.id,
+        quantidade,
+        precoUnitario: ing.preco,
+        custoUnitario: ing.custo
+      };
+    }).filter(Boolean) as Array<{ ingredienteId: string; quantidade: number; precoUnitario: number; custoUnitario: number }>;
 
-    const ingredientesRelacao = ingredientesIds
-      .map(slug => {
-        const ing = ingredienteMap.get(slug);
-        if (ing) {
-          custoBurger += ing.custo;
-          return {
-            ingredienteId: ing.id,
-            quantidade: 1,
-            precoUnitario: ing.preco,
-            custoUnitario: ing.custo
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    custoTotalBurgers += custoBurger;
+    subtotal += burgerPreco * quantidadeBurger;
+    custoTotal += burgerCusto * quantidadeBurger;
 
     return {
-      nome: burger.nome || `Burger ${index + 1}`,
-      preco: burger.preco,
-      custo: custoBurger,
-      quantidade: 1,
-      ingredientes: {
-        create: ingredientesRelacao
-      }
+      nome: burger.nome || `Burger ${idx + 1}`,
+      preco: burgerPreco,
+      custo: burgerCusto,
+      quantidade: quantidadeBurger,
+      ingredientes: { create: ingredientesRelacao }
     };
   });
 
-  // Preparar dados dos acompanhamentos com custos
-  const acompanhamentosData = acompanhamentosPayload.map(ac => {
-    const acompDB = acompanhamentoMap.get(ac.id);
-    const quantidade = ac.quantidade || 1;
+  const acompanhamentosData = (orderData.acompanhamentos || []).map(ac => {
+    const acomp = acompanhamentoMap.get(ac.acompanhamentoId);
+    const quantidade = ac.quantidade ?? 1;
+    if (!acomp) return null;
+    subtotal += acomp.preco * quantidade;
+    custoTotal += acomp.custo * quantidade;
+    return {
+      acompanhamentoId: acomp.id,
+      quantidade,
+      precoUnitario: acomp.preco,
+      custoUnitario: acomp.custo
+    };
+  }).filter(Boolean) as Array<{ acompanhamentoId: string; quantidade: number; precoUnitario: number; custoUnitario: number }>;
 
-    if (acompDB) {
-      custoTotalAcompanhamentos += acompDB.custo * quantidade;
-      return {
-        acompanhamentoId: acompDB.id,
-        quantidade,
-        precoUnitario: acompDB.preco,
-        custoUnitario: acompDB.custo
-      };
-    }
-    return null;
-  }).filter(Boolean);
+  const taxaEntrega = orderData.tipoEntrega === "ENTREGA"
+    ? await buscarTaxaEntrega()
+    : 0;
 
-  const custoTotal = custoTotalBurgers + custoTotalAcompanhamentos;
-  const subtotal = orderData.subtotal || orderData.total;
-  const taxaEntrega = orderData.taxaEntrega || 0;
-  const desconto = orderData.desconto || 0;
-  const total = orderData.total;
+  const total = subtotal + taxaEntrega;
   const lucro = total - custoTotal;
 
-  // Criar pedido em transação (inclui atualização de estoque)
   const pedido = await prisma!.$transaction(async (tx) => {
-    // 1. Criar o pedido
     const novoPedido = await tx.pedido.create({
       data: {
         nome: orderData.nome,
@@ -225,103 +191,76 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, 'pushEndpoint'
         tipoEntrega: orderData.tipoEntrega,
         subtotal,
         taxaEntrega,
-        desconto,
+        desconto: 0,
         total,
         custoTotal,
         lucro,
         observacoes: orderData.observacoes || null,
-        itens: toPrismaJson(orderData.itens), // Mantém JSON para compatibilidade
+        itens: toPrismaJson(orderData),
         status: "CONFIRMADO",
-        burgers: {
-          create: burgersData
-        },
-        acompanhamentos: {
-          create: acompanhamentosData as Array<{
-            acompanhamentoId: string;
-            quantidade: number;
-            precoUnitario: number;
-            custoUnitario: number;
-          }>
-        }
-      },
-      include: {
-        burgers: {
-          include: {
-            ingredientes: true
-          }
-        },
-        acompanhamentos: true
+        burgers: { create: burgersData },
+        acompanhamentos: { create: acompanhamentosData }
       }
     });
 
-    // 2. Decrementar estoque dos ingredientes
-    for (const burger of orderData.itens || []) {
-      const ingredientesIds = burger.ingredientes || burger.selecionados || [];
-      for (const slug of ingredientesIds) {
-        const ing = ingredienteMap.get(slug);
-        if (ing) {
-          const estoqueAnterior = ing.estoque;
-          const novoEstoque = Math.max(0, estoqueAnterior - 1);
-
-          await tx.ingrediente.update({
-            where: { id: ing.id },
-            data: { estoque: novoEstoque }
-          });
-
-          // Registrar movimentação
-          await tx.movimentacaoEstoque.create({
-            data: {
-              tipoItem: 'ingrediente',
-              itemId: ing.id,
-              tipo: 'saida',
-              quantidade: -1,
-              estoqueAnterior,
-              estoqueAtual: novoEstoque,
-              pedidoId: novoPedido.id,
-              motivo: `Pedido #${novoPedido.numero || novoPedido.id}`
-            }
-          });
-
-          // Atualizar no map para próximas iterações
-          ing.estoque = novoEstoque;
-        }
+    for (const rel of burgersPayload) {
+      for (const ingRel of rel.ingredientes || []) {
+        const ing = ingredienteMap.get(ingRel.ingredienteId);
+        if (!ing) continue;
+        const quantidade = ingRel.quantidade ?? 1;
+        const estoqueAnterior = ing.estoque;
+        const estoqueAtual = Math.max(0, estoqueAnterior - quantidade);
+        await tx.ingrediente.update({ where: { id: ing.id }, data: { estoque: estoqueAtual } });
+        await tx.movimentacaoEstoque.create({
+          data: {
+            tipoItem: "ingrediente",
+            itemId: ing.id,
+            tipo: "saida",
+            quantidade: -quantidade,
+            estoqueAnterior,
+            estoqueAtual,
+            pedidoId: novoPedido.id,
+            motivo: `Pedido #${novoPedido.numero}`
+          }
+        });
+        ing.estoque = estoqueAtual;
       }
     }
 
-    // 3. Decrementar estoque dos acompanhamentos
-    for (const ac of acompanhamentosPayload) {
-      const acompDB = acompanhamentoMap.get(ac.id);
-      if (acompDB) {
-        const quantidade = ac.quantidade || 1;
-        const estoqueAnterior = acompDB.estoque;
-        const novoEstoque = Math.max(0, estoqueAnterior - quantidade);
-
-        await tx.acompanhamento.update({
-          where: { id: acompDB.id },
-          data: { estoque: novoEstoque }
-        });
-
-        // Registrar movimentação
-        await tx.movimentacaoEstoque.create({
-          data: {
-            tipoItem: 'acompanhamento',
-            itemId: acompDB.id,
-            tipo: 'saida',
-            quantidade: -quantidade,
-            estoqueAnterior,
-            estoqueAtual: novoEstoque,
-            pedidoId: novoPedido.id,
-            motivo: `Pedido #${novoPedido.numero || novoPedido.id}`
-          }
-        });
-
-        // Atualizar no map para próximas iterações
-        acompDB.estoque = novoEstoque;
-      }
+    for (const ac of orderData.acompanhamentos || []) {
+      const acomp = acompanhamentoMap.get(ac.acompanhamentoId);
+      if (!acomp) continue;
+      const quantidade = ac.quantidade ?? 1;
+      const estoqueAnterior = acomp.estoque;
+      const estoqueAtual = Math.max(0, estoqueAnterior - quantidade);
+      await tx.acompanhamento.update({ where: { id: acomp.id }, data: { estoque: estoqueAtual } });
+      await tx.movimentacaoEstoque.create({
+        data: {
+          tipoItem: "acompanhamento",
+          itemId: acomp.id,
+          tipo: "saida",
+          quantidade: -quantidade,
+          estoqueAnterior,
+          estoqueAtual,
+          pedidoId: novoPedido.id,
+          motivo: `Pedido #${novoPedido.numero}`
+        }
+      });
+      acomp.estoque = estoqueAtual;
     }
 
     return novoPedido;
   });
 
   return pedido;
+}
+
+async function buscarTaxaEntrega() {
+  try {
+    const config = await prisma!.configuracao.findUnique({ where: { chave: "taxa_entrega" } });
+    return config ? Number(config.valor) : 0;
+  } catch (error) {
+    console.error("Erro ao buscar taxa de entrega", error);
+    return 0;
+  }
 }
