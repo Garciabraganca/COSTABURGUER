@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIngredientImage } from '@/lib/assets/ingredientImages';
 import { prisma } from '@/lib/prisma';
-import { catalogTablesStatus, ensureCatalogSeeded } from '@/lib/catalog/seed';
+import { catalogTablesStatus, ensureCatalogSeeded, EXPECTED_CATALOG_TABLES } from '@/lib/catalog/seed';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,15 +48,19 @@ export async function GET(request: NextRequest) {
 
   if (!tablesOk) {
     log('tabelas ausentes', { missing });
-    return buildCatalogResponse({
-      ok: false,
-      code: 'MISSING_TABLES',
-      message: 'Tabelas necessárias não encontradas.',
-      missing,
-      categories: [],
-      items: [],
-      action: 'APPLY_MIGRATIONS',
-    });
+    return buildCatalogResponse(
+      {
+        ok: false,
+        code: 'MIGRATION_REQUIRED',
+        message: 'Tabelas Prisma ausentes. Rode as migrations em produção.',
+        missing,
+        expected: EXPECTED_CATALOG_TABLES,
+        categories: [],
+        items: [],
+        action: 'APPLY_MIGRATIONS',
+      },
+      503
+    );
   }
 
   let seeded;

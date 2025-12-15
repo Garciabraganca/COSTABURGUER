@@ -13,11 +13,12 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
    ```bash
    npm install
    ```
-2. Configure o banco (PostgreSQL) via variável de ambiente:
+2. Configure o banco (PostgreSQL) via variáveis de ambiente:
    ```bash
    export DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB_NAME"
+   export DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME"
    ```
-   > Sem o `DATABASE_URL`, as rotas de API não conseguirão persistir pedidos.
+   > Sem o `DATABASE_URL`, as rotas de API não conseguirão persistir pedidos. Sem o `DIRECT_URL`, o `npm run build` não aplicará migrations automaticamente.
 3. Suba o servidor de desenvolvimento:
    ```bash
    npm run dev
@@ -61,16 +62,16 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
    - **Pooler (6543)** → use em `DATABASE_URL` para o runtime (prisma pooler).
 2. Crie um `.env` local a partir de `.env.example`, preenchendo:
    - `DATABASE_URL` com a conexão do pooler (`...pooler.supabase.com:6543?sslmode=require&pgbouncer=true`).
-   - `DIRECT_URL` com a conexão direta (porta 5432 + sslmode=require).
+   - `DIRECT_URL` com a conexão direta (porta 5432 + `sslmode=require`).
    - `JWT_SECRET` com uma string longa e aleatória.
    - `ADMIN_BOOTSTRAP_KEY` com um segredo único para habilitar o primeiro Admin.
 3. Rode localmente:
    ```bash
-   npx prisma generate
-   npx prisma migrate dev --name add-usuario
+   npm run db:generate
+   npm run db:migrate
    npm run dev
    ```
-4. Na Vercel (Production e Preview), adicione as variáveis `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `AUTO_SEED_CATALOG` (use `1` para popular catálogos vazios) e `ADMIN_BOOTSTRAP_KEY` em **Project Settings → Environment Variables**.
+4. Na Vercel (Production e Preview), adicione as variáveis `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `AUTO_SEED_CATALOG` (use `1` para popular catálogos vazios) e `ADMIN_BOOTSTRAP_KEY` em **Project Settings → Environment Variables**. Sem `DIRECT_URL`, o `npm run build` em produção (hook da Vercel) não conseguirá aplicar migrations.
 5. Para ambientes já publicados, aplique as migrations em produção com:
    ```bash
    npx prisma migrate deploy
@@ -82,7 +83,12 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
    # ou use o script helper
    ./scripts/deploy.sh
    ```
-   Em bancos vazios, mantenha `AUTO_SEED_CATALOG=1` para permitir popular o catálogo a partir do endpoint `/api/catalog`.
+   Em bancos vazios, mantenha `AUTO_SEED_CATALOG=1` para permitir popular o catálogo a partir do endpoint `/api/catalog`. Se a rota retornar `{ code: "MIGRATION_REQUIRED" }`, faltam migrations no Supabase.
+
+### Deploy na Vercel
+- O `npm run build` já executa `prisma generate` e `prisma migrate deploy` usando `DIRECT_URL`. Certifique-se de que `DIRECT_URL` aponta para a porta 5432 do Supabase com SSL.
+- `DATABASE_URL` deve usar o pooler (porta 6543) para o runtime.
+- Se o catálogo estiver vazio após as migrations, chame `/api/catalog?seed=1` (ou deixe `AUTO_SEED_CATALOG=1`) para popular a partir do manifest.
 
 ### Bootstrap seguro e painel de usuários
 1. Após o deploy com o banco vazio, acesse `/admin/bootstrap` com a chave de ativação (`ADMIN_BOOTSTRAP_KEY`) para criar o primeiro Admin.
