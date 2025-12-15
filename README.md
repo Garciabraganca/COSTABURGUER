@@ -43,6 +43,13 @@ Aplicação full-stack com App Router do Next.js 14 para montar burgers em camad
 - O avanço de status em `/pedido/[id]` é simulado com PATCH na mesma rota.
 - Integração real com Mercado Pago/WhatsApp pode ser adicionada nos endpoints existentes.
 
+## Testando o fluxo ponta a ponta
+1. Monte um burger em `/montar` e siga até **Pagamento** para enviar o payload real para `POST /api/pedidos`.
+2. Acompanhe em `/pedido/[id]` e avance status no painel da cozinha `/cozinha` (CONFIRMADO → PREPARANDO → PRONTO).
+3. Despache a entrega via `/gerente` ou API `POST /api/entregas/despachar` para gerar um token público.
+4. O motoboy abre `/entrega/[token]` (página pública) no celular e envia localização periodicamente para `/api/entregas/[token]/localizacao`.
+5. O cliente acompanha pelo mesmo token, vendo status, endereço e última atualização de rota.
+
 ### Supabase Setup
 1. No Supabase, acesse **Project Settings → Database → Connection string → URI** e copie a opção **Direct connection (5432)**; ela é necessária para rodar migrations do Prisma.
 2. Crie um `.env` local a partir de `.env.example`, preenchendo:

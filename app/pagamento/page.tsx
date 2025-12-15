@@ -40,9 +40,9 @@ export default function PagamentoPage() {
 
       // Redireciona para a página de acompanhamento se tiver notificações ativas
       if (isSubscribed) {
-        router.push(`/acompanhar?pedido=${data.id}`);
+        router.push(`/acompanhar?pedido=${data.pedidoId || data.id}`);
       } else {
-        router.push(`/pedido/${data.id}`);
+        router.push(`/pedido/${data.pedidoId || data.id}`);
       }
     } catch (err) {
       setError((err as Error).message);

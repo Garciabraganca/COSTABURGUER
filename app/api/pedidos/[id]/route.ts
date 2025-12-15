@@ -36,15 +36,23 @@ export async function GET(req: Request, context: RouteContext) {
             select: { id: true, slug: true, nome: true, imagem: true }
           }
         }
+      },
+      entrega: {
+        include: {
+          localizacoes: {
+            orderBy: { createdAt: "desc" },
+            take: 5
+          }
+        }
       }
     }
   });
 
   if (!pedido) {
-    return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
+    return NextResponse.json({ ok: false, message: "Pedido não encontrado" }, { status: 404 });
   }
 
-  return NextResponse.json(pedido);
+  return NextResponse.json({ ok: true, pedido });
 }
 
 export async function PATCH(req: Request, context: RouteContext) {
@@ -69,27 +77,24 @@ export async function PATCH(req: Request, context: RouteContext) {
     oldStatus = existingPedido?.status;
 
     if (!existingPedido) {
-      return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
+      return NextResponse.json({ ok: false, message: "Pedido não encontrado" }, { status: 404 });
     }
 
-    // Se cancelando o pedido, reverter o estoque
+    if (!podeTransicionar(existingPedido.status as PedidoStatus, newStatus)) {
+      return NextResponse.json({ ok: false, message: "Transição de status inválida" }, { status: 400 });
+    }
+
     if (newStatus === "CANCELADO" && oldStatus !== "CANCELADO") {
       await reverterEstoquePedido(id);
     }
 
     pedido = await prisma.pedido.update({
       where: { id },
-      data: {
-        status: newStatus,
-        updatedAt: new Date()
-      },
+      data: { status: newStatus, updatedAt: new Date() },
       include: {
-        burgers: {
-          include: {
-            ingredientes: true
-          }
-        },
-        acompanhamentos: true
+        burgers: { include: { ingredientes: true } },
+        acompanhamentos: true,
+        entrega: true
       }
     });
   }
@@ -105,7 +110,20 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
   }
 
-  return NextResponse.json(pedido);
+  return NextResponse.json({ ok: true, pedido });
+}
+
+function podeTransicionar(atual: PedidoStatus, proximo: PedidoStatus) {
+  const mapa: Record<PedidoStatus, PedidoStatus[]> = {
+    CONFIRMADO: ["PREPARANDO", "CANCELADO"],
+    PREPARANDO: ["PRONTO", "CANCELADO"],
+    PRONTO: ["EM_ENTREGA", "ENTREGUE", "CANCELADO"],
+    EM_ENTREGA: ["ENTREGUE", "CANCELADO"],
+    ENTREGUE: [],
+    CANCELADO: []
+  };
+
+  return mapa[atual]?.includes(proximo);
 }
 
 // Função para reverter estoque quando pedido é cancelado

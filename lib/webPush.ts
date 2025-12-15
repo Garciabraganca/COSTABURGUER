@@ -151,6 +151,17 @@ export const notificationTemplates = {
     data: { pedidoId, status: 'PREPARANDO' },
   }),
 
+  pedidoPronto: (pedidoId: string): PushPayload => ({
+    title: '✅ Pedido pronto!',
+    body: `Seu pedido #${pedidoId} está pronto para despacho ou retirada.`,
+    icon: '/logo-kraft.svg',
+    tag: `pedido-${pedidoId}-pronto`,
+    pedidoId,
+    url: `/pedido/${pedidoId}`,
+    requireInteraction: true,
+    data: { pedidoId, status: 'PRONTO' },
+  }),
+
   pedidoEmEntrega: (pedidoId: string): PushPayload => ({
     title: '🛵 Pedido saiu para entrega!',
     body: `Seu pedido #${pedidoId} está a caminho! Tempo estimado: 15-25 min.`,

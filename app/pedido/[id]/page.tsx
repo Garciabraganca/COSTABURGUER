@@ -40,7 +40,7 @@ export default function PedidoPage() {
         throw new Error('Pedido não encontrado');
       }
       const data = await response.json();
-      setPedido(data);
+      setPedido(data.pedido || data);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -76,7 +76,7 @@ export default function PedidoPage() {
         throw new Error('Não foi possível atualizar o status.');
       }
       const data = await response.json();
-      setPedido(data);
+      setPedido(data.pedido || data);
     } catch (err) {
       setError((err as Error).message);
     } finally {
