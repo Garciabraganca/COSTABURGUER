@@ -38,48 +38,52 @@ function ExtrasModal({
   });
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="modal-card-premium extras-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header-premium">
-          <div className="modal-title-area">
-            <span className="category-icon-large">{icon}</span>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-slate-950/80 text-white shadow-2xl shadow-black/40 ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-3 border-b border-white/5 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-2xl">{icon}</span>
             <div>
-              <p className="eyebrow-gold">{subtitle}</p>
-              <h3 className="modal-title">{title}</h3>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">{subtitle}</p>
+              <h3 className="text-lg font-semibold">{title}</h3>
             </div>
           </div>
-          <button className="btn-skip" onClick={onClose}>
-            Fechar <span className="skip-arrow">×</span>
+          <button className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/20" onClick={onClose}>
+            Fechar <span className="text-lg">×</span>
           </button>
         </div>
 
-        <div className="modal-grid-premium extras-modal-grid">
+        <div className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2">
           {filteredExtras.map((extra) => {
             const isSelected = extrasSelecionados.includes(extra.id);
             return (
               <button
                 key={extra.id}
-                className={`ingredient-card-premium extras-card ${isSelected ? 'selected' : ''}`}
+                className={`relative flex flex-col items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-emerald-400/50 hover:bg-white/10 ${isSelected ? 'border-emerald-400/60 shadow-neon-glow' : ''}`}
                 onClick={() => toggleExtra(extra.id)}
               >
-                <div className="extras-check">
-                  {isSelected && <span className="check-icon">✓</span>}
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-base font-semibold">{extra.nome}</span>
+                  {isSelected && <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-100">Selecionado</span>}
                 </div>
-                <div className="ingredient-details">
-                  <span className="ingredient-name-premium">{extra.nome}</span>
-                  <span className={`ingredient-price-tag ${isSelected ? 'selected' : ''}`}>
-                    + {currencyFormat(extra.preco)}
-                  </span>
-                </div>
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isSelected ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/10 text-white/80'}`}>
+                  + {currencyFormat(extra.preco)}
+                </span>
               </button>
             );
           })}
+
+          {filteredExtras.length === 0 && (
+            <div className="col-span-full rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-white/70">
+              Nenhum extra disponível
+            </div>
+          )}
         </div>
 
-        <div className="extras-modal-footer">
-          <button className="btn-primary-premium" onClick={onClose}>
+        <div className="flex items-center justify-end gap-3 border-t border-white/5 px-6 py-4">
+          <button className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]" onClick={onClose}>
             <span>Confirmar</span>
-            <span className="btn-arrow">→</span>
+            <span className="text-lg">→</span>
           </button>
         </div>
       </div>
@@ -97,9 +101,9 @@ export default function ExtrasChips() {
 
   return (
     <>
-      <div className="extras-images-container">
+      <div className="grid gap-4 md:grid-cols-2">
         <button
-          className={`extras-image-card ${hasComboSelected ? 'has-selection' : ''}`}
+          className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-lg shadow-black/30 transition hover:-translate-y-1 hover:border-emerald-400/50 ${hasComboSelected ? 'ring-2 ring-emerald-400/60' : ''}`}
           onClick={() => setActiveModal('combo')}
         >
           <Image
@@ -110,15 +114,22 @@ export default function ExtrasChips() {
             style={{ objectFit: 'cover', width: '100%', height: 'auto' }}
             priority
           />
-          {hasComboSelected && (
-            <div className="selection-badge">
-              <span>✓</span>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-4 text-white">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/70">Combo</p>
+              <p className="text-lg font-semibold">Batata + sobremesa</p>
             </div>
-          )}
+            {hasComboSelected && (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-slate-900 shadow-lg shadow-emerald-500/40">
+                ✓
+              </div>
+            )}
+          </div>
         </button>
 
         <button
-          className={`extras-image-card ${hasBebidaSelected ? 'has-selection' : ''}`}
+          className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-lg shadow-black/30 transition hover:-translate-y-1 hover:border-emerald-400/50 ${hasBebidaSelected ? 'ring-2 ring-emerald-400/60' : ''}`}
           onClick={() => setActiveModal('bebidas')}
         >
           <Image
@@ -129,11 +140,18 @@ export default function ExtrasChips() {
             style={{ objectFit: 'cover', width: '100%', height: 'auto' }}
             priority
           />
-          {hasBebidaSelected && (
-            <div className="selection-badge">
-              <span>✓</span>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-4 text-white">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/70">Bebidas</p>
+              <p className="text-lg font-semibold">Refrigerantes gelados</p>
             </div>
-          )}
+            {hasBebidaSelected && (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-slate-900 shadow-lg shadow-emerald-500/40">
+                ✓
+              </div>
+            )}
+          </div>
         </button>
       </div>
 

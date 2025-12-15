@@ -12,6 +12,7 @@ import {
   getIngredientesPorCategoria,
   calcularPrecoTotal,
 } from '@/lib/ingredientsData';
+import { cn } from '@/lib/utils';
 
 const CATEGORY_FLOW: IngredientCategory[] = [
   'pao',
@@ -53,44 +54,52 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, is
   const ingredientes = getIngredientesPorCategoria(category);
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal-card modal-card-premium">
-        <div className="modal-header-premium">
-          <div className="modal-title-area">
-            <span className="category-icon-large">{CATEGORY_ICONS[category]}</span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="w-full max-w-4xl rounded-2xl border border-white/10 bg-slate-950/80 text-white shadow-2xl shadow-black/40 ring-1 ring-white/10">
+        <div className="flex items-center justify-between gap-4 border-b border-white/5 px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-2xl">{CATEGORY_ICONS[category]}</span>
             <div>
-              <p className="eyebrow-gold">Selecione seu ingrediente</p>
-              <h3 className="modal-title">{CATEGORIAS[category].label}</h3>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">Selecione seu ingrediente</p>
+              <h3 className="text-xl font-semibold text-white">{CATEGORIAS[category].label}</h3>
             </div>
           </div>
-          <button className="btn-skip" onClick={onClose}>
-            {isLastCategory ? 'Finalizar' : 'Próximo Ingrediente'} <span className="skip-arrow">→</span>
+          <button
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+            onClick={onClose}
+          >
+            {isLastCategory ? 'Finalizar' : 'Próximo Ingrediente'} <span className="text-lg">→</span>
           </button>
         </div>
 
-        <div className="modal-grid-premium">
+        <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
           {ingredientes.map((ing) => (
             <button
               key={ing.id}
-              className="ingredient-card-premium"
+              className="group relative flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-white shadow-neon-glow transition hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-emerald-400/30"
               onClick={() => onSelect(ing.id)}
             >
-              <div className="ingredient-image-wrapper">
-                <div className="ingredient-glow"></div>
+              <div className="relative mb-3 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-black/30 ring-1 ring-white/10">
                 <IngredientImage
                   src={ing.image}
                   alt={ing.name}
                   size={95}
                 />
               </div>
-              <div className="ingredient-details">
-                <span className="ingredient-name-premium">{ing.name}</span>
-                <span className={`ingredient-price-tag ${ing.price === 0 ? 'free' : ''}`}>
+              <div className="w-full text-center">
+                <span className="block text-base font-semibold">{ing.name}</span>
+                <span className={cn('mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold', ing.price === 0 ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-white/80')}>
                   {ing.price > 0 ? `+ ${currencyFormat(ing.price)}` : 'Incluso'}
                 </span>
               </div>
             </button>
           ))}
+
+          {ingredientes.length === 0 && (
+            <div className="col-span-full rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-white/70">
+              Nenhum ingrediente disponível
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -99,19 +108,22 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, is
 
 function SpinningBurger({ hasIngredients }: { hasIngredients: boolean }) {
   return (
-    <div className={`spinning-burger-container ${hasIngredients ? 'with-ingredients' : ''}`}>
-      <div className="spinning-burger">
+    <div className={cn('relative mx-auto flex h-72 w-72 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-neon-glow', hasIngredients ? 'ring-2 ring-emerald-400/50' : 'ring-1 ring-white/10')}>
+      <div className="absolute inset-[-14%] rounded-full bg-emerald-400/10 blur-3xl" aria-hidden />
+      <div className="relative flex h-64 w-64 items-center justify-center overflow-hidden rounded-full bg-black/30 ring-1 ring-white/10">
+        <div className="absolute inset-0 animate-[spin_18s_linear_infinite] opacity-20">
+          <div className="absolute inset-0 rounded-full border border-dashed border-white/20" />
+        </div>
         <Image
           src={HAMBURGER_BASE_IMAGE}
           alt="Hambúrguer"
-          width={280}
-          height={280}
+          width={260}
+          height={260}
           style={{ objectFit: 'contain' }}
           priority
           unoptimized
         />
       </div>
-      <div className="burger-shadow"></div>
     </div>
   );
 }
@@ -120,27 +132,25 @@ function IngredientOrbit({ items }: { items: Ingredient[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="ingredients-orbit">
+    <div className="relative mx-auto mt-6 h-80 w-full max-w-xl">
       {items.map((ingredient, index) => {
         const angle = (360 / items.length) * index;
-        const delay = index * 0.1;
+        const radius = 140;
+        const radians = (angle * Math.PI) / 180;
+        const x = Math.cos(radians) * radius;
+        const y = Math.sin(radians) * radius;
 
         return (
           <div
             key={`${ingredient.id}-${index}`}
-            className="orbit-item"
-            style={{
-              '--angle': `${angle}deg`,
-              '--delay': `${delay}s`,
-            } as React.CSSProperties}
+            className="absolute flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-white/10 shadow-lg shadow-black/30 backdrop-blur"
+            style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }}
           >
-            <div className="orbit-item-inner">
-              <IngredientImage
-                src={ingredient.image}
-                alt={ingredient.name}
-                size={60}
-              />
-            </div>
+            <IngredientImage
+              src={ingredient.image}
+              alt={ingredient.name}
+              size={56}
+            />
           </div>
         );
       })}
@@ -161,20 +171,23 @@ function IngredientsList({
 
   if (ingredients.length === 0) {
     return (
-      <div className="ingredients-list-empty">
-        <span>Nenhum ingrediente adicionado</span>
+      <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-4 text-center text-white/70">
+        Nenhum ingrediente adicionado
       </div>
     );
   }
 
   return (
-    <div className="ingredients-list">
+    <div className="flex flex-wrap gap-2">
       {ingredients.map((ing, index) => (
-        <div key={`${ing.id}-${index}`} className="ingredient-chip">
-          <span className="chip-icon">{CATEGORY_ICONS[ing.category]}</span>
-          <span className="chip-name">{ing.name}</span>
+        <div
+          key={`${ing.id}-${index}`}
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-medium text-white shadow-sm shadow-black/30 backdrop-blur"
+        >
+          <span className="text-base">{CATEGORY_ICONS[ing.category]}</span>
+          <span>{ing.name}</span>
           <button
-            className="chip-remove"
+            className="rounded-full bg-white/10 px-2 py-1 text-white/70 transition hover:bg-red-500/20 hover:text-white"
             onClick={() => onRemove(index)}
             aria-label={`Remover ${ing.name}`}
           >
@@ -246,84 +259,102 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     activeCategoryIndex !== null ? CATEGORY_FLOW[activeCategoryIndex] : null;
 
   return (
-    <div className="builder-premium">
+    <div className="space-y-8 text-white">
       {/* Hero Section */}
-      <section className="builder-hero">
-        <div className="hero-content">
-          <div className="hero-badge">Monte do seu jeito</div>
-          <h1 className="hero-title">Crie seu Hambúrguer</h1>
-          <p className="hero-subtitle">
-            Escolha cada ingrediente e veja seu hambúrguer ganhar vida em tempo real
-          </p>
-          {!hasStarted && (
-            <button className="btn-start-building" onClick={startFlow}>
-              <span className="btn-icon">🍔</span>
-              Começar a Montar
-              <span className="btn-shine"></span>
-            </button>
-          )}
-        </div>
-        <div className="hero-decoration">
-          <div className="deco-circle circle-1"></div>
-          <div className="deco-circle circle-2"></div>
-          <div className="deco-circle circle-3"></div>
+      <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 shadow-lg shadow-black/30">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,255,213,0.12),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,80,255,0.12),transparent_30%)]" />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">
+              Monte do seu jeito
+            </div>
+            <h1 className="text-3xl font-black leading-tight sm:text-4xl">Crie seu Hambúrguer</h1>
+            <p className="max-w-2xl text-white/70">
+              Escolha cada ingrediente e veja seu hambúrguer ganhar vida em tempo real.
+            </p>
+            {!hasStarted && (
+              <button
+                className="group inline-flex items-center gap-3 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+                onClick={startFlow}
+              >
+                <span className="text-lg">🍔</span>
+                Começar a Montar
+                <span className="text-lg transition group-hover:translate-x-1">→</span>
+              </button>
+            )}
+          </div>
+          <div className="relative flex h-24 w-full max-w-xs items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white/70 shadow-neon-glow">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(0,255,170,0.15),transparent_40%)]" />
+            <div className="relative text-center">
+              <p className="text-xs uppercase tracking-[0.2em]">Total Atual</p>
+              <p className="text-3xl font-black">{currencyFormat(totalPrice)}</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Main Builder Area */}
-      <section className="builder-main">
+      <section className="grid gap-6 lg:grid-cols-2">
         {/* Spinning Burger Preview */}
-        <div className="preview-panel">
-          <div className="preview-header">
-            <div className="preview-title">
-              <span className="preview-icon">👀</span>
-              <span>Visualização em Tempo Real</span>
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3 text-lg font-semibold">
+              <span className="text-2xl">👀</span>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/60">Visualização</p>
+                <p>Em tempo real</p>
+              </div>
             </div>
-            <div className="price-display">
-              <span className="price-label">Total</span>
-              <span className="price-value">{currencyFormat(totalPrice)}</span>
+            <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
+              Total: {currencyFormat(totalPrice)}
             </div>
           </div>
 
-          <div className="burger-preview-area">
+          <div className="mt-6 flex flex-col items-center gap-4">
             <SpinningBurger hasIngredients={sortedIngredients.length > 0} />
             <IngredientOrbit items={sortedIngredients} />
           </div>
 
-          <div className="preview-ingredients">
+          <div className="mt-6">
             <IngredientsList
               selectedIds={selectedIngredients}
               onRemove={handleRemoveIngredient}
             />
           </div>
 
-          <div className="preview-actions">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <button
-              className="btn-ghost"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
               onClick={clearAll}
               disabled={selectedIngredients.length === 0}
             >
               Limpar Tudo
             </button>
             <button
-              className="btn-primary-premium"
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/60 disabled:shadow-none"
               onClick={handleFinish}
               disabled={selectedIngredients.length === 0}
             >
               <span>Adicionar à Sacola</span>
-              <span className="btn-arrow">→</span>
+              <span className="text-lg">→</span>
             </button>
           </div>
         </div>
 
         {/* Category Selection */}
-        <div className="categories-panel">
-          <div className="categories-header">
-            <h2>Escolha os Ingredientes</h2>
-            <p>Toque em uma categoria para adicionar</p>
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">Escolha os ingredientes</p>
+              <h2 className="text-xl font-semibold">Categorias</h2>
+              <p className="text-sm text-white/70">Toque em uma categoria para adicionar</p>
+            </div>
+            {selectedIngredients.length > 0 && (
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">{selectedIngredients.length} selecionado(s)</span>
+            )}
           </div>
 
-          <div className="categories-grid">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {CATEGORY_FLOW.map((category, index) => {
               const isActive = activeCategoryIndex === index;
               const count = selectedIngredients.filter(
@@ -333,21 +364,27 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               return (
                 <button
                   key={category}
-                  className={`category-card ${isActive ? 'active' : ''} ${count > 0 ? 'has-items' : ''}`}
+                  className={cn(
+                    'flex items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-left transition hover:border-white/40 hover:bg-white/10',
+                    isActive ? 'border-emerald-400/60 shadow-neon-glow' : 'border-white/10',
+                    count > 0 && 'border-white/20'
+                  )}
                   onClick={() => {
                     setHasStarted(true);
                     setActiveCategoryIndex(index);
                   }}
-                  style={{ '--category-color': CATEGORIAS[category].cor } as React.CSSProperties}
+                  style={isActive ? { boxShadow: `0 10px 30px ${CATEGORIAS[category].cor}33` } : undefined}
                 >
-                  <div className="category-icon">{CATEGORY_ICONS[category]}</div>
-                  <div className="category-info">
-                    <span className="category-name">{CATEGORIAS[category].label}</span>
-                    {count > 0 && (
-                      <span className="category-count">{count} item{count > 1 ? 's' : ''}</span>
-                    )}
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-lg">{CATEGORY_ICONS[category]}</span>
+                    <div className="leading-tight">
+                      <span className="text-sm font-semibold">{CATEGORIAS[category].label}</span>
+                      {count > 0 && (
+                        <span className="block text-xs text-emerald-200">{count} item{count > 1 ? 's' : ''}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="category-indicator">
+                  <div className={cn('flex h-9 w-9 items-center justify-center rounded-full border text-lg font-bold', count > 0 ? 'border-emerald-300/50 bg-emerald-400/20 text-white' : 'border-white/10 bg-white/5 text-white/60')}>
                     {count > 0 ? '✓' : '+'}
                   </div>
                 </button>
@@ -355,9 +392,9 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             })}
           </div>
 
-          <div className="categories-footer">
+          <div className="flex items-center justify-end">
             <button
-              className="btn-secondary"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               onClick={handleFinish}
               disabled={selectedIngredients.length === 0}
             >
