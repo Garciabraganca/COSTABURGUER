@@ -24,6 +24,9 @@ type HealthSuccess = {
   databaseUrlHost: string | null;
   databaseUrlHasSslmode: boolean;
   databaseUrlHasPgbouncer: boolean;
+  directUrlHost: string | null;
+  directUrlPresent: boolean;
+  databaseUsage: string;
   prismaClientVersion: string;
   db: string | null;
   schema: string | null;
@@ -38,6 +41,9 @@ type HealthFailure = {
   databaseUrlHost: string | null;
   databaseUrlHasSslmode: boolean;
   databaseUrlHasPgbouncer: boolean;
+  directUrlHost: string | null;
+  directUrlPresent: boolean;
+  databaseUsage: string;
   prismaClientVersion: string;
   reason?: string;
   error?: HealthError;
@@ -130,11 +136,14 @@ type Diagnostics = {
   databaseUrlHost: string | null;
   databaseUrlHasSslmode: boolean;
   databaseUrlHasPgbouncer: boolean;
+  directUrlHost: string | null;
+  directUrlPresent: boolean;
   databaseUrlValidation: ReturnType<typeof validateDatabaseUrl>;
 };
 
 function buildDiagnostics(): Diagnostics {
   const databaseUrl = process.env.DATABASE_URL;
+  const directUrl = process.env.DIRECT_URL;
   const databaseUrlValidation = validateDatabaseUrl(databaseUrl);
   const validationDetails = databaseUrlValidation.ok === false ? databaseUrlValidation.details ?? null : null;
   const databaseUrlHost = databaseUrlValidation.ok === false
@@ -148,6 +157,8 @@ function buildDiagnostics(): Diagnostics {
   const databaseUrlHasPgbouncer = databaseUrlValidation.ok === false
     ? Boolean(validationDetails?.hasPgbouncer)
     : databaseUrlValidation.hasPgbouncer;
+  const directUrlHost = safeExtractHost(directUrl);
+  const directUrlPresent = Boolean(directUrl);
   const runtime: 'vercel' | 'local' = process.env.VERCEL ? 'vercel' : 'local';
   const prismaClientVersion = prismaPackage.version ?? 'unknown';
 
@@ -155,6 +166,8 @@ function buildDiagnostics(): Diagnostics {
     databaseUrlHost,
     databaseUrlHasSslmode,
     databaseUrlHasPgbouncer,
+    directUrlHost,
+    directUrlPresent,
     runtime,
     prismaClientVersion,
     databaseUrlValidation
@@ -162,9 +175,45 @@ function buildDiagnostics(): Diagnostics {
 }
 
 function toResponseDiagnostics(diagnostics: Diagnostics) {
-  const { runtime, prismaClientVersion, databaseUrlHost, databaseUrlHasSslmode, databaseUrlHasPgbouncer } = diagnostics;
+  const {
+    runtime,
+    prismaClientVersion,
+    databaseUrlHost,
+    databaseUrlHasSslmode,
+    databaseUrlHasPgbouncer,
+    directUrlHost,
+    directUrlPresent
+  } = diagnostics;
 
-  return { runtime, prismaClientVersion, databaseUrlHost, databaseUrlHasSslmode, databaseUrlHasPgbouncer };
+  return {
+    runtime,
+    prismaClientVersion,
+    databaseUrlHost,
+    databaseUrlHasSslmode,
+    databaseUrlHasPgbouncer,
+    directUrlHost,
+    directUrlPresent,
+    databaseUsage: buildDatabaseUsageMessage(directUrlPresent)
+  };
+}
+
+function safeExtractHost(url: string | undefined): string | null {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function buildDatabaseUsageMessage(hasDirectUrl: boolean) {
+  const directUrlHint = hasDirectUrl
+    ? 'Migrations/scripts devem usar DIRECT_URL (conexão direta 5432).'
+    : 'DIRECT_URL não configurada; use conexão direta (5432) para migrations/scripts.';
+
+  return `Runtime usa DATABASE_URL (pooler quando disponível). ${directUrlHint}`;
 }
 
 function normalizeError(error: unknown): HealthError {
