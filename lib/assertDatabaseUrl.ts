@@ -113,7 +113,7 @@ export function assertDatabaseUrl() {
 
   const validation = validateDatabaseUrl();
 
-  if (!validation.ok) {
+  if (validation.ok === false) {
     throw new Error(validation.reason ?? ERROR_MESSAGE);
   }
 }

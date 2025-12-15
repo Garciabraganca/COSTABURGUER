@@ -51,7 +51,7 @@ export async function GET() {
     const { databaseUrlValidation } = diagnostics;
     const baseDiagnostics = toResponseDiagnostics(diagnostics);
 
-    if (!databaseUrlValidation.ok) {
+    if (databaseUrlValidation.ok === false) {
       return NextResponse.json<HealthFailure>(
         { ok: false, ...baseDiagnostics, reason: databaseUrlValidation.reason },
         { status: 200 }
@@ -136,17 +136,18 @@ type Diagnostics = {
 function buildDiagnostics(): Diagnostics {
   const databaseUrl = process.env.DATABASE_URL;
   const databaseUrlValidation = validateDatabaseUrl(databaseUrl);
-  const databaseUrlHost = databaseUrlValidation.ok
-    ? databaseUrlValidation.host
-    : typeof databaseUrlValidation.details?.host === 'string'
-      ? databaseUrlValidation.details.host
-      : null;
-  const databaseUrlHasSslmode = databaseUrlValidation.ok
-    ? databaseUrlValidation.hasSslmode
-    : Boolean(databaseUrlValidation.details?.hasSslmode);
-  const databaseUrlHasPgbouncer = databaseUrlValidation.ok
-    ? databaseUrlValidation.hasPgbouncer
-    : Boolean(databaseUrlValidation.details?.hasPgbouncer);
+  const validationDetails = databaseUrlValidation.ok === false ? databaseUrlValidation.details ?? null : null;
+  const databaseUrlHost = databaseUrlValidation.ok === false
+    ? typeof validationDetails?.host === 'string'
+      ? validationDetails.host
+      : null
+    : databaseUrlValidation.host;
+  const databaseUrlHasSslmode = databaseUrlValidation.ok === false
+    ? Boolean(validationDetails?.hasSslmode)
+    : databaseUrlValidation.hasSslmode;
+  const databaseUrlHasPgbouncer = databaseUrlValidation.ok === false
+    ? Boolean(validationDetails?.hasPgbouncer)
+    : databaseUrlValidation.hasPgbouncer;
   const runtime: 'vercel' | 'local' = process.env.VERCEL ? 'vercel' : 'local';
   const prismaClientVersion = prismaPackage.version ?? 'unknown';
 
