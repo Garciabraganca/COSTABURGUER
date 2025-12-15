@@ -10,17 +10,26 @@ type SeedResult = {
   reason?: string;
 };
 
+export async function tableExists(prisma: PrismaClient, table: string) {
+  const rows = await prisma.$queryRaw<{ exists?: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = ${table}
+    ) AS "exists";
+  `;
+
+  return Boolean(rows?.[0]?.exists);
+}
+
 export async function catalogTablesExist(prisma: PrismaClient) {
   try {
-    const result =
-      await prisma.$queryRaw<{ categoria: string | null; ingrediente: string | null }[]>`
-        SELECT
-          to_regclass('public."Categoria"') AS categoria,
-          to_regclass('public."Ingrediente"') AS ingrediente;
-      `;
+    const [categoriaExists, ingredienteExists] = await Promise.all([
+      tableExists(prisma, 'Categoria'),
+      tableExists(prisma, 'Ingrediente'),
+    ]);
 
-    const row = result?.[0];
-    return Boolean(row?.categoria && row?.ingrediente);
+    return categoriaExists && ingredienteExists;
   } catch (error) {
     console.error('[catalog] erro ao verificar tabelas', error);
     return false;

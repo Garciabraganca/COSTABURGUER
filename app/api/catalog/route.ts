@@ -6,13 +6,17 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   if (!prisma) {
-    return NextResponse.json({ ok: false, categories: [], items: [] }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, message: 'prisma-unavailable', categories: [], items: [] },
+      { status: 503 }
+    );
   }
 
   const tablesReady = await catalogTablesExist(prisma);
   if (!tablesReady) {
     return NextResponse.json({
       ok: true,
+      message: 'missing-catalog-tables',
       categories: [],
       items: [],
       seeded: { seeded: false, reason: 'missing-tables' },
@@ -75,6 +79,12 @@ export async function GET() {
     });
   } catch (error) {
     console.error('[catalog] erro ao buscar catálogo', error);
-    return NextResponse.json({ ok: true, categories: [], items: [], seeded });
+    return NextResponse.json({
+      ok: true,
+      message: 'catalog-query-error',
+      categories: [],
+      items: [],
+      seeded,
+    });
   }
 }
