@@ -1,80 +1,135 @@
-import { cookies } from 'next/headers';
+import { safeGetSessionFromCookies } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GerenteNav } from '@/components/GerenteNav';
+import { NeonCard } from '@/components/widgets/NeonCard';
+import { StepsWidget } from '@/components/widgets/StepsWidget';
+import { Bike, CheckCircle2, Clock3, FlameKindling } from 'lucide-react';
 import Link from 'next/link';
 
-import { GerenteNav } from '@/components/GerenteNav';
-import { verificarJwt } from '@/lib/jwt';
-import { prisma } from '@/lib/prisma';
+export const dynamic = 'force-dynamic';
 
 export default async function GerentePage() {
-  const token = cookies().get('token')?.value;
-  const payload = token ? await verificarJwt(token) : null;
+  const session = await safeGetSessionFromCookies();
 
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+  let stats: Array<{ status: string; _count: { _all: number } }> = [];
+  let ultimos: Array<{ id: string; numero: number; status: string; createdAt: Date }> = [];
+  let erroPedidos: string | null = null;
 
-  const stats = prisma
-    ? await prisma.pedido.groupBy({
+  try {
+    if (!prisma) {
+      erroPedidos = 'Banco não configurado';
+      ultimos = [];
+    } else {
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      const grouped = await (prisma.pedido.groupBy as any)({
         by: ['status'],
         _count: { _all: true },
         where: { createdAt: { gte: hoje } }
-      })
-    : [];
+      });
 
-  const ultimos = prisma
-    ? await prisma.pedido.findMany({
+      stats = grouped as Array<{ status: string; _count: { _all: number } }>;
+
+      ultimos = await prisma.pedido.findMany({
         orderBy: { createdAt: 'desc' },
         take: 20,
         select: { id: true, numero: true, status: true, createdAt: true }
-      })
-    : [];
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao carregar dados do gerente:', error);
+    stats = [];
+    ultimos = [];
+    erroPedidos = 'Sem pedidos hoje';
+  }
 
-  const totais = stats.reduce((acc, item) => ({ ...acc, [item.status]: item._count._all }), {} as Record<string, number>);
+  const totais = stats.reduce(
+    (acc, item) => ({ ...acc, [item.status]: item._count._all }),
+    { CONFIRMADO: 0, PREPARANDO: 0, PRONTO: 0, EM_ENTREGA: 0 } as Record<string, number>
+  );
+
+  const kpis = [
+    { title: 'Confirmados', value: totais.CONFIRMADO ?? 0, subtitle: 'Novos pedidos', icon: CheckCircle2, accent: 'green' as const },
+    { title: 'Preparando', value: totais.PREPARANDO ?? 0, subtitle: 'Na cozinha', icon: FlameKindling, accent: 'amber' as const },
+    { title: 'Prontos', value: totais.PRONTO ?? 0, subtitle: 'Aguardando retirada', icon: Clock3, accent: 'cyan' as const },
+    { title: 'Em entrega', value: totais.EM_ENTREGA ?? 0, subtitle: 'Em rota', icon: Bike, accent: 'pink' as const }
+  ];
 
   return (
-    <main style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
+    <main className="mx-auto max-w-6xl space-y-8 px-6 py-8 text-white">
       <GerenteNav />
-      <h1 style={{ marginBottom: 8 }}>Dashboard do Gerente</h1>
-      <p style={{ color: '#555' }}>Sessão: <strong>{payload?.role ?? 'Gerente'}</strong></p>
+      <header className="flex flex-col gap-2">
+        <p className="text-sm uppercase tracking-[0.2em] text-white/60">Dashboard do Gerente</p>
+        <h1 className="text-4xl font-black leading-tight">Olá, {session?.role ?? 'Gerente'}</h1>
+      </header>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, margin: '16px 0' }}>
-        {['CONFIRMADO', 'PREPARANDO', 'PRONTO', 'EM_ENTREGA', 'ENTREGUE', 'CANCELADO'].map(status => (
-          <div key={status} style={{ background: '#f1f5f9', padding: 16, borderRadius: 12 }}>
-            <div style={{ fontSize: 12, color: '#555' }}>{status}</div>
-            <div style={{ fontSize: 24, fontWeight: 700 }}>{totais[status] ?? 0}</div>
-          </div>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {kpis.map(kpi => (
+          <NeonCard
+            key={kpi.title}
+            title={kpi.title}
+            subtitle={kpi.subtitle}
+            value={kpi.value}
+            icon={kpi.icon}
+            accent={kpi.accent}
+          />
         ))}
       </section>
 
-      <h2>Últimos pedidos</h2>
-      <div style={{ border: '1px solid #eee', borderRadius: 12, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ background: '#f8fafc' }}>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 12 }}>#</th>
-              <th style={{ textAlign: 'left', padding: 12 }}>Status</th>
-              <th style={{ textAlign: 'left', padding: 12 }}>Horário</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ultimos.map(pedido => (
-              <tr key={pedido.id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                <td style={{ padding: 12 }}>
-                  <Link href={`/gerente/pedidos/${pedido.id}`} style={{ color: '#b22222' }}>
-                    #{pedido.numero}
-                  </Link>
-                </td>
-                <td style={{ padding: 12 }}>{pedido.status}</td>
-                <td style={{ padding: 12 }}>{new Date(pedido.createdAt).toLocaleTimeString('pt-BR')}</td>
-              </tr>
-            ))}
-            {ultimos.length === 0 && (
-              <tr>
-                <td colSpan={3} style={{ padding: 12 }}>Sem pedidos recentes.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <StepsWidget />
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-white/60">Pedidos recentes</p>
+            <h2 className="text-2xl font-bold">Últimos pedidos</h2>
+          </div>
+          {erroPedidos && <span className="text-sm text-white/70">{erroPedidos}</span>}
+        </div>
+
+        <Card className="overflow-hidden border-white/10 bg-slate-900/60 text-white">
+          <CardHeader>
+            <CardTitle className="text-lg">Fila do dia</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-white/10 text-sm">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold">#</th>
+                    <th className="px-4 py-3 text-left font-semibold">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold">Horário</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ultimos?.map(pedido => (
+                    <tr key={pedido.id} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="px-4 py-3">
+                        <Link href={`/gerente/pedidos/${pedido.id}`} className="text-pink-200 hover:text-white">
+                          #{pedido.numero}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-white/80">{pedido.status}</td>
+                      <td className="px-4 py-3 text-white/70">
+                        {new Date(pedido.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                    </tr>
+                  ))}
+                  {(!ultimos || ultimos.length === 0) && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-6 text-center text-white/60">
+                        Sem pedidos recentes.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </main>
   );
 }
