@@ -1,5 +1,5 @@
 import { catalogManifest } from '@/lib/catalog/manifest';
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 
 const LOCK_KEY = 'auto-seed-catalog';
 
@@ -10,42 +10,68 @@ type SeedResult = {
   reason?: string;
 };
 
-export async function tableExists(prisma: PrismaClient, table: string) {
-  const rows = await prisma.$queryRaw<{ exists?: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name = ${table}
-    ) AS "exists";
-  `;
+type TablesCheckResult = {
+  missing: string[];
+  ok: boolean;
+};
 
-  return Boolean(rows?.[0]?.exists);
+const MISSING_TABLE_ERROR_CODES = new Set(['P2021', 'P2019']);
+
+function isMissingTableError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    MISSING_TABLE_ERROR_CODES.has(error.code)
+  );
 }
 
-export async function catalogTablesExist(prisma: PrismaClient) {
+async function checkTable(prisma: PrismaClient, name: string, check: () => Promise<unknown>) {
   try {
-    const [categoriaExists, ingredienteExists] = await Promise.all([
-      tableExists(prisma, 'Categoria'),
-      tableExists(prisma, 'Ingrediente'),
-    ]);
-
-    return categoriaExists && ingredienteExists;
+    await check();
+    return { name, exists: true } as const;
   } catch (error) {
-    console.error('[catalog] erro ao verificar tabelas', error);
-    return false;
+    if (isMissingTableError(error)) {
+      return { name, exists: false } as const;
+    }
+
+    console.error(`[catalog] erro ao verificar tabela ${name}`, error);
+    throw error;
   }
 }
 
-export async function ensureCatalogSeeded(prisma?: PrismaClient | null): Promise<SeedResult> {
+export async function catalogTablesStatus(prisma: PrismaClient): Promise<TablesCheckResult> {
+  const tables = [
+    { name: 'categoria', check: () => prisma.categoria.count({ take: 1 }) },
+    { name: 'ingrediente', check: () => prisma.ingrediente.count({ take: 1 }) },
+    { name: 'acompanhamento', check: () => prisma.acompanhamento.count({ take: 1 }) },
+    { name: 'configuracao', check: () => prisma.configuracao.count({ take: 1 }) },
+    { name: 'pedido', check: () => prisma.pedido.count({ take: 1 }) },
+    { name: 'entrega', check: () => prisma.entrega.count({ take: 1 }) },
+    { name: 'catalog_seed_state', check: () => prisma.catalogSeedState.count({ take: 1 }) },
+  ];
+
+  const results = await Promise.all(tables.map((table) => checkTable(prisma, table.name, table.check)));
+  const missing = results.filter((result) => !result.exists).map((result) => result.name);
+
+  return { missing, ok: missing.length === 0 };
+}
+
+export async function ensureCatalogSeeded(
+  prisma?: PrismaClient | null,
+  opts: { force?: boolean } = {}
+): Promise<SeedResult> {
   if (!prisma) return { seeded: false, reason: 'no-prisma' };
 
-  const tablesReady = await catalogTablesExist(prisma);
+  const { ok: tablesReady } = await catalogTablesStatus(prisma);
   if (!tablesReady) return { seeded: false, reason: 'missing-tables' };
 
   const activeItems = await prisma.ingrediente.count({ where: { ativo: true } });
   if (activeItems > 0) return { seeded: false, reason: 'catalog-not-empty' };
 
-  if (process.env.AUTO_SEED_CATALOG !== 'true') {
+  const envEnabled = ['1', 'true', 'yes'].includes(
+    String(process.env.AUTO_SEED_CATALOG ?? '').toLowerCase()
+  );
+
+  if (!envEnabled && !opts.force) {
     return { seeded: false, reason: 'env-disabled' };
   }
 

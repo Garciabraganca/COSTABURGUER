@@ -1,8 +1,8 @@
 import { safeGetSessionFromCookies } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GerenteNav } from '@/components/GerenteNav';
 import { NeonCard } from '@/components/widgets/NeonCard';
+import { SectionCard } from '@/components/widgets/SectionCard';
 import { StepsWidget } from '@/components/widgets/StepsWidget';
 import { Bike, CheckCircle2, Clock3, FlameKindling } from 'lucide-react';
 import Link from 'next/link';
@@ -80,56 +80,41 @@ export default async function GerentePage() {
 
       <StepsWidget />
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-white/60">Pedidos recentes</p>
-            <h2 className="text-2xl font-bold">Últimos pedidos</h2>
-          </div>
-          {erroPedidos && <span className="text-sm text-white/70">{erroPedidos}</span>}
+      <SectionCard title="Últimos pedidos" subtitle="Fila do dia" className="bg-white/5">
+        <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/5">
+          <table className="min-w-full divide-y divide-white/10 text-sm">
+            <thead className="bg-white/5">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">#</th>
+                <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-left font-semibold">Horário</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ultimos?.map(pedido => (
+                <tr key={pedido.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="px-4 py-3">
+                    <Link href={`/gerente/pedidos/${pedido.id}`} className="text-pink-200 hover:text-white">
+                      #{pedido.numero}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-white/80">{pedido.status}</td>
+                  <td className="px-4 py-3 text-white/70">
+                    {new Date(pedido.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                </tr>
+              ))}
+              {(!ultimos || ultimos.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-white/60">
+                    {erroPedidos ?? 'Sem pedidos recentes.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
-        <Card className="overflow-hidden border-white/10 bg-slate-900/60 text-white">
-          <CardHeader>
-            <CardTitle className="text-lg">Fila do dia</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/10 text-sm">
-                <thead className="bg-white/5">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">#</th>
-                    <th className="px-4 py-3 text-left font-semibold">Status</th>
-                    <th className="px-4 py-3 text-left font-semibold">Horário</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ultimos?.map(pedido => (
-                    <tr key={pedido.id} className="border-b border-white/5 hover:bg-white/5">
-                      <td className="px-4 py-3">
-                        <Link href={`/gerente/pedidos/${pedido.id}`} className="text-pink-200 hover:text-white">
-                          #{pedido.numero}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-white/80">{pedido.status}</td>
-                      <td className="px-4 py-3 text-white/70">
-                        {new Date(pedido.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                    </tr>
-                  ))}
-                  {(!ultimos || ultimos.length === 0) && (
-                    <tr>
-                      <td colSpan={3} className="px-4 py-6 text-center text-white/60">
-                        Sem pedidos recentes.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+      </SectionCard>
     </main>
   );
 }
