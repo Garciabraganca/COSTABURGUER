@@ -15,6 +15,16 @@ type TablesCheckResult = {
   ok: boolean;
 };
 
+export const EXPECTED_CATALOG_TABLES = [
+  'categoria',
+  'ingrediente',
+  'acompanhamento',
+  'configuracao',
+  'pedido',
+  'entrega',
+  'catalog_seed_state',
+];
+
 const MISSING_TABLE_ERROR_CODES = new Set(['P2021', 'P2019']);
 
 function isMissingTableError(error: unknown) {
