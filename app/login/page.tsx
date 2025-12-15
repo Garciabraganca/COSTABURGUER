@@ -7,7 +7,7 @@ const roleRedirect: Record<string, string> = {
   COZINHEIRO: '/cozinha',
   GERENTE: '/gerente',
   ADMIN: '/admin',
-  MOTOBOY: '/cozinha'
+  MOTOBOY: '/motoboy'
 };
 
 export default function LoginPage() {

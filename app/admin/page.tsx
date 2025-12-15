@@ -1,6 +1,14 @@
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 
-export default function AdminPage() {
+import { AdminNav } from '@/components/AdminNav';
+import { verificarJwt } from '@/lib/jwt';
+
+export default async function AdminPage() {
+  const token = cookies().get('token')?.value;
+  const payload = token ? await verificarJwt(token) : null;
+  const roleLabel = payload ? (payload as any).role : 'Desconhecido';
+
   return (
     <main
       style={{
@@ -22,11 +30,9 @@ export default function AdminPage() {
           boxShadow: '0 12px 32px rgba(0,0,0,0.08)'
         }}
       >
+        <AdminNav />
         <h1 style={{ marginTop: 0 }}>Painel de Administração</h1>
-        <p style={{ color: '#555', marginBottom: '24px' }}>
-          Gerencie usuários e permissões da operação. Novas áreas como relatórios e estoque
-          podem ser adicionadas aqui no futuro.
-        </p>
+        <p style={{ color: '#555', marginBottom: '24px' }}>Sessão como: <strong>{roleLabel}</strong></p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Link
