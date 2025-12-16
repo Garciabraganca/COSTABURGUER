@@ -8,6 +8,8 @@ const prisma = new PrismaClient({
   },
 });
 
+const SEED_STATE_KEY = 'initial_catalog_seed';
+
 // Categorias de ingredientes
 const categorias = [
   { slug: 'pao', nome: 'Pães', cor: '#f9c46b', ordem: 1 },
@@ -116,6 +118,12 @@ const configuracoes = [
 
 async function main() {
   console.log('Iniciando seed do banco de dados...');
+  const seedState = await prisma.catalogSeedState.findUnique({ where: { key: SEED_STATE_KEY } });
+  if (seedState?.doneAt) {
+    console.log(`Seed anterior marcado como concluído em ${seedState.doneAt.toISOString()}.`);
+  } else {
+    console.log('Nenhum registro de seed anterior encontrado.');
+  }
 
   // 1. Criar categorias
   console.log('Criando categorias...');
@@ -223,6 +231,18 @@ async function main() {
     });
   }
   console.log(`${configuracoes.length} configurações criadas/atualizadas.`);
+
+  console.log('Marcando estado do seed como concluído...');
+  await prisma.catalogSeedState.upsert({
+    where: { key: SEED_STATE_KEY },
+    update: {
+      doneAt: new Date(),
+    },
+    create: {
+      key: SEED_STATE_KEY,
+      doneAt: new Date(),
+    },
+  });
 
   console.log('\nSeed concluído com sucesso!');
 
