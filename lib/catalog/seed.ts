@@ -1,5 +1,5 @@
 import { catalogManifest } from '@/lib/catalog/manifest';
-import { Prisma, type PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 
 const LOCK_KEY = 'auto-seed-catalog';
 
@@ -15,42 +15,38 @@ type TablesCheckResult = {
   ok: boolean;
 };
 
-const MISSING_TABLE_ERROR_CODES = new Set(['P2021', 'P2019']);
+const EXPECTED_TABLES = [
+  { dbName: 'Categoria', label: 'categoria' },
+  { dbName: 'Ingrediente', label: 'ingrediente' },
+  { dbName: 'Acompanhamento', label: 'acompanhamento' },
+  { dbName: 'Configuracao', label: 'configuracao' },
+  { dbName: 'Pedido', label: 'pedido' },
+  { dbName: 'Entrega', label: 'entrega' },
+  { dbName: 'catalog_seed_state', label: 'catalog_seed_state' },
+];
 
-function isMissingTableError(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    MISSING_TABLE_ERROR_CODES.has(error.code)
-  );
-}
-
-async function checkTable(prisma: PrismaClient, name: string, check: () => Promise<unknown>) {
+async function checkMissingTables(prisma: PrismaClient): Promise<string[]> {
   try {
-    await check();
-    return { name, exists: true } as const;
-  } catch (error) {
-    if (isMissingTableError(error)) {
-      return { name, exists: false } as const;
-    }
+    const existingTables = await prisma.$queryRaw<Array<{ table_name: string }>>`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
+    `;
 
-    console.error(`[catalog] erro ao verificar tabela ${name}`, error);
+    const existing = new Set(existingTables.map((row) => row.table_name));
+
+    return EXPECTED_TABLES.filter((table) => !existing.has(table.dbName)).map(
+      (table) => table.label
+    );
+  } catch (error) {
+    console.error('[catalog] falha ao verificar tabelas do catálogo', error);
     throw error;
   }
 }
 
 export async function catalogTablesStatus(prisma: PrismaClient): Promise<TablesCheckResult> {
-  const tables = [
-    { name: 'categoria', check: () => prisma.categoria.count({ take: 1 }) },
-    { name: 'ingrediente', check: () => prisma.ingrediente.count({ take: 1 }) },
-    { name: 'acompanhamento', check: () => prisma.acompanhamento.count({ take: 1 }) },
-    { name: 'configuracao', check: () => prisma.configuracao.count({ take: 1 }) },
-    { name: 'pedido', check: () => prisma.pedido.count({ take: 1 }) },
-    { name: 'entrega', check: () => prisma.entrega.count({ take: 1 }) },
-    { name: 'catalog_seed_state', check: () => prisma.catalogSeedState.count({ take: 1 }) },
-  ];
-
-  const results = await Promise.all(tables.map((table) => checkTable(prisma, table.name, table.check)));
-  const missing = results.filter((result) => !result.exists).map((result) => result.name);
+  const missing = await checkMissingTables(prisma);
 
   return { missing, ok: missing.length === 0 };
 }
