@@ -13,7 +13,9 @@
 - O workflow executa `npm run db:generate` seguido de `npm run db:release` (`db:migrate` + `db:seed`) em ambiente com rede liberada.
 
 ## Execução manual
-- Para aplicar migrações e seed manualmente, use:
+- Para aplicar migrações e seed manualmente, use um dos caminhos abaixo:
+  - GitHub Actions → Database Release → Run workflow (com `DATABASE_URL` e `DIRECT_URL` configurados como secrets).
+  - Localmente, com as variáveis exportadas:
 
 ```bash
 npm run db:release
