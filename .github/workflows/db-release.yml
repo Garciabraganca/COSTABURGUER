@@ -30,8 +30,8 @@ jobs:
 
       - run: npm run db:release
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ vars.DATABASE_URL }}
+          DIRECT_URL: ${{ vars.DIRECT_URL }}
           PRISMA_ENGINES_MIRROR: ${{ secrets.PRISMA_ENGINES_MIRROR }}
           HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
           HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
