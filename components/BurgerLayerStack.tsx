@@ -15,22 +15,22 @@ export type LayerIngredient = {
 
 const CATEGORY_LAYER_ORDER: Record<CatalogCategorySlug, number> = {
   pao: 90,
-  extras: 70,
-  vegetais: 68,
-  queijo: 60,
-  carne: 50,
-  molho: 40,
-  especial: 75,
+  extras: 75,
+  vegetais: 70,
+  queijo: 64,
+  carne: 58,
+  molho: 52,
+  especial: 80,
 };
 
 const CATEGORY_SIZES: Record<CatalogCategorySlug, number> = {
-  pao: 88,
-  carne: 80,
-  queijo: 74,
-  vegetais: 70,
-  extras: 68,
-  molho: 64,
-  especial: 72,
+  pao: 90,
+  carne: 82,
+  queijo: 76,
+  vegetais: 72,
+  extras: 70,
+  molho: 66,
+  especial: 78,
 };
 
 function resolveSize(categoriaSlug: CatalogCategorySlug, container: number) {
@@ -64,15 +64,15 @@ export function BurgerLayerStack({ ingredients }: { ingredients: LayerIngredient
         <img
           src={resolveAssetUrl(HAMBURGER_BASE_IMAGE) || ''}
           alt="Base do hambúrguer"
-          className="absolute left-1/2 top-1/2 h-[72%] w-[72%] -translate-x-1/2 -translate-y-1/2 object-contain opacity-50 [animation:spin_18s_linear_infinite]"
+          className="absolute left-1/2 top-1/2 h-[72%] w-[72%] -translate-x-1/2 -translate-y-1/2 object-contain opacity-60"
           loading="lazy"
         />
         {sorted.map((ingredient, index) => {
           const imageUrl = resolveAssetUrl(getIngredientImage(ingredient.slug));
           const size = resolveSize(ingredient.categoriaSlug, containerSize);
-          const baseClass = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_20px_24px_rgba(0,0,0,0.35)]';
-          const wobble = (index - sorted.length / 2) * 2.2;
-          const floatDelay = `${index * 120}ms`;
+          const baseClass = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_18px_24px_rgba(0,0,0,0.38)]';
+          const offset = (sorted.length - index) * 1.2;
+          const scale = 1 - index * 0.01;
 
           if (!imageUrl) {
             console.warn('[catalog] camada sem imagem', ingredient.slug);
@@ -86,12 +86,9 @@ export function BurgerLayerStack({ ingredients }: { ingredients: LayerIngredient
               style={{
                 width: size,
                 zIndex: resolveZIndex(ingredient),
-                transform: `translate(-50%, -50%) rotate(${wobble}deg)`,
-                animationDelay: `${floatDelay}, 0ms`,
-                animationName: 'float, fadein',
-                animationDuration: '6s, 240ms',
-                animationTimingFunction: 'ease-in-out, ease-out',
-                animationIterationCount: 'infinite, 1',
+                transform: `translate(-50%, calc(-50% + ${offset}px)) scale(${scale})`,
+                filter: 'drop-shadow(0 22px 26px rgba(0,0,0,0.36))',
+                transition: 'transform 200ms ease-out',
               }}
               className={cn(baseClass)}
               loading="lazy"
@@ -119,25 +116,6 @@ export function BurgerLayerStack({ ingredients }: { ingredients: LayerIngredient
           to {
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
-          }
-        }
-        @keyframes spin {
-          from {
-            transform: translate(-50%, -50%) rotate(0deg);
-          }
-          to {
-            transform: translate(-50%, -50%) rotate(360deg);
-          }
-        }
-        @keyframes float {
-          0% {
-            transform: translate(-50%, -50%) rotate(0deg) translateY(0);
-          }
-          50% {
-            transform: translate(-50%, -50%) rotate(2deg) translateY(-6px);
-          }
-          100% {
-            transform: translate(-50%, -50%) rotate(0deg) translateY(0);
           }
         }
       `}</style>
