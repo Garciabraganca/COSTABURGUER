@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import BurgerBuilder from '@/components/BurgerBuilder';
 import ExtrasChips from '@/components/ExtrasChips';
 import SummaryBox from '@/components/SummaryBox';
@@ -16,8 +17,16 @@ export default function MontarPage() {
     cart,
   } = useOrder();
 
+  // Preço do hambúrguer sendo montado em tempo real
+  const [currentBurgerPrice, setCurrentBurgerPrice] = useState(0);
+
   const handleBurgerComplete = (ingredientes: string[], preco: number) => {
     addCustomBurgerToCart(ingredientes, preco);
+    setCurrentBurgerPrice(0); // Reset após adicionar à sacola
+  };
+
+  const handlePriceChange = (preco: number) => {
+    setCurrentBurgerPrice(preco);
   };
 
   return (
@@ -35,6 +44,7 @@ export default function MontarPage() {
               <BurgerBuilder
                 onBurgerComplete={handleBurgerComplete}
                 currencyFormat={currencyFormat}
+                onPriceChange={handlePriceChange}
               />
             </SectionCard>
 
@@ -48,18 +58,20 @@ export default function MontarPage() {
               <div className="space-y-4">
                 <NeonCard
                   title="Itens na sacola"
-                  subtitle={cart.length === 0 ? 'Aguardando seleção' : 'Pronto para enviar'}
+                  subtitle={cart.length === 0 && currentBurgerPrice === 0 ? 'Aguardando seleção' : currentBurgerPrice > 0 ? 'Montando hambúrguer...' : 'Pronto para enviar'}
                   value={cart.length}
                   icon={ShoppingBag}
                   accent="cyan"
                 />
                 <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-black/30 backdrop-blur">
-                  {cart.length === 0 ? (
+                  {cart.length === 0 && currentBurgerPrice === 0 ? (
                     <p className="text-sm text-white/70">Nenhum ingrediente adicionado.</p>
+                  ) : currentBurgerPrice > 0 ? (
+                    <p className="text-sm text-emerald-400/80">Montando seu hambúrguer...</p>
                   ) : (
                     <p className="text-sm text-white/70">{cart.length} item(s) aguardando checkout.</p>
                   )}
-                  <SummaryBox />
+                  <SummaryBox previewPrice={currentBurgerPrice} />
                 </div>
                 <Link
                   href="/sacola"

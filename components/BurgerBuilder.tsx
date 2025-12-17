@@ -48,6 +48,8 @@ const CATEGORY_ICON: Record<CatalogCategorySlug, string> = {
 type Props = {
   onBurgerComplete: (ingredientes: string[], preco: number) => void;
   currencyFormat: (value: number) => string;
+  /** Callback chamado quando o preço do hambúrguer sendo montado muda */
+  onPriceChange?: (preco: number) => void;
 };
 
 type CategoryModalProps = {
@@ -146,7 +148,7 @@ function IngredientsList({
   );
 }
 
-export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Props) {
+export default function BurgerBuilder({ onBurgerComplete, currencyFormat, onPriceChange }: Props) {
   const [selectedIngredients, setSelectedIngredients] = useState<CatalogIngredient[]>([]);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
@@ -161,6 +163,11 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const warnedMissingImage = useRef(new Set<string>());
 
   const totalPrice = useMemo(() => selectedIngredients.reduce((total, ing) => total + (ing.preco ?? 0), 0), [selectedIngredients]);
+
+  // Notifica o componente pai quando o preço muda
+  useEffect(() => {
+    onPriceChange?.(totalPrice);
+  }, [totalPrice, onPriceChange]);
 
   const sortedIngredients = useMemo(
     () =>
