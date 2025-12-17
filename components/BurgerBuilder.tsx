@@ -50,23 +50,43 @@ type Props = {
   currencyFormat: (value: number) => string;
 };
 
+type SelectedMap = Record<CatalogCategorySlug, CatalogIngredient[]>;
+
 type CategoryModalProps = {
   isOpen: boolean;
   category: CatalogCategory;
   onClose: () => void;
-  onSelect: (ingredient: CatalogIngredient) => void;
+  onBack: () => void;
+  onExit: () => void;
+  onToggle: (ingredient: CatalogIngredient) => void;
   currencyFormat: (value: number) => string;
   isLastCategory: boolean;
   ingredients: CatalogIngredient[];
+  selected: SelectedMap;
+  subtotal: number;
 };
 
-function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, isLastCategory, ingredients }: CategoryModalProps) {
+function CategoryModal({
+  isOpen,
+  category,
+  onClose,
+  onBack,
+  onExit,
+  onToggle,
+  currencyFormat,
+  isLastCategory,
+  ingredients,
+  selected,
+  subtotal,
+}: CategoryModalProps) {
   if (!isOpen) return null;
+
+  const selectedIds = new Set(selected[category.slug]?.map((ing) => ing.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div className="w-full max-w-4xl rounded-2xl border border-white/10 bg-slate-950/80 text-white shadow-2xl shadow-black/40 ring-1 ring-white/10">
-        <div className="flex items-center justify-between gap-4 border-b border-white/5 px-6 py-5">
+      <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/90 text-white shadow-2xl shadow-black/40 ring-1 ring-white/10">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-6 py-5">
           <div className="flex items-center gap-3">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-2xl">{CATEGORY_ICON[category.slug]}</span>
             <div>
@@ -74,47 +94,92 @@ function CategoryModal({ isOpen, category, onClose, onSelect, currencyFormat, is
               <h3 className="text-xl font-semibold text-white">{category.nome}</h3>
             </div>
           </div>
-          <button
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
-            onClick={onClose}
-          >
-            {isLastCategory ? 'Finalizar' : 'Próximo Ingrediente'} <span className="text-lg">→</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/40 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+              onClick={onBack}
+              aria-label="Voltar para categoria anterior"
+            >
+              ← Voltar
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-full border border-red-300/50 px-4 py-2 text-sm font-semibold text-red-100 transition hover:border-red-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+              onClick={onExit}
+              aria-label="Sair do construtor"
+            >
+              Sair
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-200"
+              onClick={onClose}
+              aria-label={isLastCategory ? 'Finalizar seleção' : 'Ir para próxima categoria'}
+            >
+              {isLastCategory ? 'Finalizar' : 'Próximo Ingrediente'} <span className="text-lg">→</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          {ingredients.map((ing) => (
-            <button
-              key={ing.id}
-              className="group relative flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-white shadow-neon-glow transition hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-emerald-400/30"
-              onClick={() => onSelect(ing)}
-            >
-              <IngredientIcon
-                src={ing.imagem}
-                alt={ing.nome}
-                category={ing.categoriaSlug}
-                size={104}
-                className="mb-3 h-28 w-28"
-              />
-              <div className="w-full text-center">
-                <span className="block text-base font-semibold">{ing.nome}</span>
-                <span
-                  className={cn(
-                    'mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold',
-                    ing.preco === 0 ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-white/80'
-                  )}
-                >
-                  {ing.preco > 0 ? `+ ${currencyFormat(ing.preco)}` : 'Incluso'}
-                </span>
-              </div>
-            </button>
-          ))}
+        <div className="flex max-h-[75vh] flex-1 flex-col">
+          <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-6 sm:grid-cols-2 lg:grid-cols-3">
+            {ingredients.map((ing) => {
+              const isSelected = selectedIds.has(ing.id);
 
-          {ingredients.length === 0 && (
-            <div className="col-span-full rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-white/70">
-              Nenhum ingrediente disponível
+              return (
+                <button
+                  key={ing.id}
+                  className={cn(
+                    'group relative flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-white shadow-neon-glow transition hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-emerald-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400',
+                    isSelected && 'border-emerald-400/70 ring-2 ring-emerald-400/40 shadow-emerald-400/40'
+                  )}
+                  onClick={() => onToggle(ing)}
+                  aria-pressed={isSelected}
+                >
+                  <label className="absolute right-3 top-3 flex items-center gap-2 text-sm text-white/70" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggle(ing)}
+                      className="h-4 w-4 rounded border-white/30 bg-white/10 text-emerald-400 focus:ring-emerald-400"
+                      aria-label={`Selecionar ${ing.nome}`}
+                    />
+                  </label>
+                  <IngredientIcon
+                    src={ing.imagem}
+                    alt={ing.nome}
+                    category={ing.categoriaSlug}
+                    size={104}
+                    className="mb-3 h-28 w-28"
+                  />
+                  <div className="w-full text-center">
+                    <span className="block text-base font-semibold">{ing.nome}</span>
+                    <span
+                      className={cn(
+                        'mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold backdrop-blur',
+                        ing.preco === 0 ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-white/80'
+                      )}
+                    >
+                      {ing.preco > 0 ? `+ ${currencyFormat(ing.preco)}` : 'Incluso'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {ingredients.length === 0 && (
+              <div className="col-span-full rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-white/70">
+                Nenhum ingrediente disponível
+              </div>
+            )}
+          </div>
+
+          <div className="sticky bottom-0 border-t border-white/10 bg-slate-900/80 px-6 py-4 backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <p className="text-white/80">Subtotal atualizado em tempo real</p>
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-4 py-2 text-base font-semibold text-emerald-100 ring-1 ring-emerald-400/40">
+                Subtotal: {currencyFormat(subtotal)}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
@@ -147,7 +212,7 @@ function IngredientsList({
 }
 
 export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Props) {
-  const [selectedIngredients, setSelectedIngredients] = useState<CatalogIngredient[]>([]);
+  const [selectedByCategory, setSelectedByCategory] = useState<SelectedMap>({} as SelectedMap);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
@@ -160,7 +225,14 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [seedLoading, setSeedLoading] = useState(false);
   const warnedMissingImage = useRef(new Set<string>());
 
-  const totalPrice = useMemo(() => selectedIngredients.reduce((total, ing) => total + (ing.preco ?? 0), 0), [selectedIngredients]);
+  const BASE_PRICE = 12;
+
+  const selectedIngredients = useMemo(() => Object.values(selectedByCategory).flat(), [selectedByCategory]);
+
+  const totalPrice = useMemo(
+    () => BASE_PRICE + selectedIngredients.reduce((total, ing) => total + (ing.preco ?? 0), 0),
+    [selectedIngredients]
+  );
 
   const sortedIngredients = useMemo(
     () =>
@@ -282,25 +354,53 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     });
   };
 
-  const handleSelectIngredient = (ingredient: CatalogIngredient) => {
-    setSelectedIngredients((prev) => {
-      const rule = CATEGORY_RULES[ingredient.categoriaSlug];
-      const filtered = prev.filter((ing) => ing.slug !== ingredient.slug);
-      const withoutCategory = rule?.max === 1 ? filtered.filter((ing) => ing.categoriaSlug !== ingredient.categoriaSlug) : filtered;
-      const sameCategory = withoutCategory.filter((ing) => ing.categoriaSlug === ingredient.categoriaSlug);
-
-      if (rule?.max && rule.max > 1 && sameCategory.length >= rule.max) {
-        const trimmed = sameCategory.slice(1 - rule.max);
-        return [...withoutCategory.filter((ing) => ing.categoriaSlug !== ingredient.categoriaSlug), ...trimmed, ingredient];
-      }
-
-      return [...withoutCategory, ingredient];
+  const goToPreviousCategory = () => {
+    setActiveCategoryIndex((prev) => {
+      if (prev === null) return null;
+      if (prev <= 0) return null;
+      return prev - 1;
     });
+  };
+
+  const handleCloseCategoryModal = () => {
+    if (activeCategoryIndex !== null && activeCategoryIndex >= sortedCategories.length - 1) {
+      setActiveCategoryIndex(null);
+      return;
+    }
     goToNextCategory();
   };
 
+  const handleToggleIngredient = (ingredient: CatalogIngredient) => {
+    setSelectedByCategory((prev) => {
+      const existing = prev[ingredient.categoriaSlug] || [];
+      const rule = CATEGORY_RULES[ingredient.categoriaSlug];
+      const alreadySelected = existing.some((ing) => ing.id === ingredient.id);
+
+      if (alreadySelected) {
+        const filtered = existing.filter((ing) => ing.id !== ingredient.id);
+        return { ...prev, [ingredient.categoriaSlug]: filtered };
+      }
+
+      let nextList = [...existing, ingredient];
+
+      if (rule?.max && rule.max > 0 && nextList.length > rule.max) {
+        nextList = nextList.slice(nextList.length - rule.max);
+      }
+
+      return { ...prev, [ingredient.categoriaSlug]: nextList };
+    });
+  };
+
   const handleRemoveIngredient = (slug: string) => {
-    setSelectedIngredients((prev) => prev.filter((ing) => ing.slug !== slug));
+    setSelectedByCategory((prev) => {
+      const next: SelectedMap = {} as SelectedMap;
+
+      (Object.keys(prev) as CatalogCategorySlug[]).forEach((category) => {
+        next[category] = (prev[category] || []).filter((ing) => ing.slug !== slug);
+      });
+
+      return next;
+    });
   };
 
   const handleFinish = () => {
@@ -310,13 +410,24 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     }
 
     onBurgerComplete(selectedIngredients.map((ing) => ing.slug), totalPrice);
-    setSelectedIngredients([]);
+    setSelectedByCategory({} as SelectedMap);
     setHasStarted(false);
     setActiveCategoryIndex(null);
   };
 
   const clearAll = () => {
-    setSelectedIngredients([]);
+    setSelectedByCategory({} as SelectedMap);
+  };
+
+  const handleExitFlow = () => {
+    const hasSelection = selectedIngredients.length > 0;
+    if (hasSelection) {
+      const confirmExit = window.confirm('Deseja sair? Você perderá a montagem atual.');
+      if (!confirmExit) return;
+    }
+    setSelectedByCategory({} as SelectedMap);
+    setActiveCategoryIndex(null);
+    setHasStarted(false);
   };
 
   const activeCategory =
@@ -530,11 +641,15 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         <CategoryModal
           isOpen={activeCategoryIndex !== null}
           category={activeCategory}
-          onClose={goToNextCategory}
-          onSelect={handleSelectIngredient}
+          onClose={handleCloseCategoryModal}
+          onBack={goToPreviousCategory}
+          onExit={handleExitFlow}
+          onToggle={handleToggleIngredient}
           currencyFormat={currencyFormat}
           isLastCategory={activeCategoryIndex === sortedCategories.length - 1}
           ingredients={ingredientsByCategory[activeCategory.slug] || []}
+          selected={selectedByCategory}
+          subtotal={totalPrice}
         />
       )}
     </div>
