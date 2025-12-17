@@ -375,7 +375,12 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-white/80">
               <p className="font-semibold">Tabelas ausentes</p>
               <p className="text-white/70">{missingTables.join(', ') || 'Verifique migrations pendentes.'}</p>
-              <p className="mt-2 text-white/60">Consulte o README na seção de deploy para aplicar as migrations.</p>
+              <div className="mt-3 space-y-2 rounded-lg border border-white/10 bg-black/30 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Para corrigir, execute:</p>
+                <code className="block text-xs text-emerald-300">npm run db:release</code>
+                <p className="text-xs text-white/50">ou manualmente:</p>
+                <code className="block text-xs text-emerald-300">npx prisma migrate deploy && npx prisma db seed</code>
+              </div>
             </div>
           )}
 
