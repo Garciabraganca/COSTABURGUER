@@ -232,6 +232,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [catalogStatus, setCatalogStatus] = useState<'ready' | 'missing' | 'empty' | 'error'>('ready');
   const [missingTables, setMissingTables] = useState<string[]>([]);
   const [seedLoading, setSeedLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'layers' | '3d'>('3d');
   const warnedMissingImage = useRef(new Set<string>());
 
   const BASE_PRICE = 12;
@@ -549,8 +550,35 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                   <p>Seu Hambúrguer</p>
                 </div>
               </div>
-              <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
-                Total: {currencyFormat(totalPrice)}
+              <div className="flex items-center gap-3">
+                {/* Toggle de visualização */}
+                <div className="flex rounded-full bg-white/10 p-1">
+                  <button
+                    onClick={() => setViewMode('layers')}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition",
+                      viewMode === 'layers'
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-white/60 hover:text-white"
+                    )}
+                  >
+                    2D
+                  </button>
+                  <button
+                    onClick={() => setViewMode('3d')}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition",
+                      viewMode === '3d'
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-white/60 hover:text-white"
+                    )}
+                  >
+                    3D
+                  </button>
+                </div>
+                <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
+                  Total: {currencyFormat(totalPrice)}
+                </div>
               </div>
             </div>
 
