@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IngredientIcon } from './IngredientIcon';
 import { cn } from '@/lib/utils';
-import { BurgerLayerStack, LayerIngredient } from './BurgerLayerStack';
+import { BurgerLayerStack } from './BurgerLayerStack';
+import type { LayerIngredient } from './BurgerLayerStack';
 import { Burger3DPreview, Layer3DIngredient } from './Burger3DPreview';
 import { CatalogCategorySlug, getIngredientImage } from '@/lib/assets/ingredientImages';
 
@@ -245,10 +246,10 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     [selectedIngredients]
   );
 
-  const sortedIngredients = useMemo(
+  const sortedIngredients = useMemo<LayerIngredient[]>(
     () =>
       selectedIngredients
-        .map<LayerIngredient>((ing) => ({
+        .map((ing): LayerIngredient => ({
           id: ing.id,
           slug: ing.slug,
           nome: ing.nome,
