@@ -73,8 +73,8 @@ const DIRS = {
       'CEBOLA BRANCA.png',
       'CEBOLA CARAMELIZADA.png',
       'CEBOLA CRISPY.png',
-      'CEBOLA ROXA.png',
       'CEBOLA RODELA.png',
+      'CEBOLA ROXA.png',
       'CEBOLA.png',
       'ERVILHA.png',
       'MILHO.png',
@@ -112,14 +112,64 @@ function slugify(input: string) {
 }
 
 const aliases: Record<string, string> = {
-  'blend-bovino-90g': 'blend-bovino-160-gramas',
-  'queijo-cheddar': 'molho-chedar',
+  // Aliases para pães
   'pao': 'pao-brioche',
   'pao-tradicional': 'pao-com-gergelim-ttradicional',
+  'pao-gergelim': 'pao-com-gergelim-ttradicional',
   'pao-gold': 'pao-com-gergelim-gold',
+  'pao-gergelim-gold': 'pao-com-gergelim-gold',
+  'pao-beterraba': 'pao-de-beterraba',
+
+  // Aliases para carnes
+  'blend-bovino-90g': 'blend-bovino-160-gramas',
+  'blend-bovino-90': 'blend-bovino-160-gramas',
+  'blend-bovino-120': 'blend-bovino-160-gramas',
+  'blend-bovino-160': 'blend-bovino-160-gramas',
+  'blend-bovino': 'blend-bovino-160-gramas',
+  'hamburguer': 'hamburguer-simples',
+  'carne': 'blend-bovino-160-gramas',
+  'frango': 'frango-desfiado',
+  'bland-de-frango': 'bland-de-frango',
+  'frango-em-cubo': 'frango-em-cubo',
+  'carne-desfiada': 'carne-desfiada',
+
+  // Aliases para queijos
+  'queijo-cheddar': 'molho-chedar',
+  'cheddar': 'molho-chedar',
+  'queijo-mussarela': 'mussarela-fatiada',
+  'mussarela': 'mussarela-fatiada',
+  'queijo': 'queijo-prato',
+  'cream-cheese': 'cream-cheese',
+  'gorgonzola': 'queijo-gorgonzola',
+  'parmesao': 'parmesao-ralado',
+
+  // Aliases para molhos
+  'maionese': 'maionese',
+  'barbecue': 'molho-barbecue',
   'molho-costa-especial': 'molho-billy-e-jack',
-  bacon: 'bacon-fatiado',
-  maionese: 'maionese',
+  'billy-jack': 'molho-billy-e-jack',
+  'ketchup': 'catchup',
+  'shoyu': 'molho-shoyu',
+  'geleia-pimenta': 'geleia-de-pimenta',
+
+  // Aliases para vegetais
+  'cebola': 'cebola',
+  'cebola-branca': 'cebola-branca',
+  'cebola-caramelizada': 'cebola-caramelizada',
+  'cebola-crispy': 'cebola-crispy',
+  'cebola-rodela': 'cebola-rodela',
+
+  // Aliases para extras
+  'bacon': 'bacon-fatiado',
+  'bacon-tiras': 'bacon-tiras',
+  'bacon-cubo': 'bacon-cubo',
+  'aneis-cebola': 'aneis-de-cebola',
+  'calabresa': 'calabresa-fatiada',
+  'ovo': 'ovo-frito',
+
+  // Aliases para categoria especial - usa imagem de molho especial
+  'especial': 'molho-billy-e-jack',
+  'passas': 'passas',
 };
 
 function buildManifest() {
