@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 
-import { Role } from '@prisma/client';
-
 import { hashSenha, isStrongPassword, isValidEmail } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { gerarJwt } from '@/lib/jwt';
@@ -86,7 +84,7 @@ export async function POST(request: Request) {
         nome,
         email,
         passwordHash,
-        role: Role.ADMIN,
+        role: 'ADMIN',
         ativo: true
       }
     });

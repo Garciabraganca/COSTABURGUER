@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 import { fallbackCatalogIngredients } from '@/lib/catalogo/fallbackIngredientes';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const categoriaSlug = searchParams.get('categoriaSlug') || undefined;
 
-    const where: Prisma.IngredienteWhereInput = { ativo: true };
+    const where: Record<string, unknown> = { ativo: true };
 
     if (categoriaSlug) {
       where.categoria = { slug: categoriaSlug };
