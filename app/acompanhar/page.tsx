@@ -27,8 +27,9 @@ function AcompanharContent() {
   const [showDemo, setShowDemo] = useState(true);
 
   // Extrai ingredientes do carrinho ou usa demo
-  const ingredientes = cart.length > 0
-    ? cart[0].ingredientes || ingredientesDemo
+  // Os ingredientes no cart agora são objetos, então extraímos os slugs
+  const ingredientes = cart.length > 0 && cart[0].ingredientes.length > 0
+    ? cart[0].ingredientes.map(ing => typeof ing === 'string' ? ing : ing.slug)
     : ingredientesDemo;
 
   const extras = extrasSelecionados.length > 0

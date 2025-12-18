@@ -1,6 +1,6 @@
 "use client";
 
-import BurgerBuilder from '@/components/BurgerBuilder';
+import BurgerBuilder, { BurgerIngredientForCart } from '@/components/BurgerBuilder';
 import ExtrasChips from '@/components/ExtrasChips';
 import SummaryBox from '@/components/SummaryBox';
 import { useOrder } from '@/context/OrderContext';
@@ -16,7 +16,7 @@ export default function MontarPage() {
     cart,
   } = useOrder();
 
-  const handleBurgerComplete = (ingredientes: string[], preco: number) => {
+  const handleBurgerComplete = (ingredientes: BurgerIngredientForCart[], preco: number) => {
     addCustomBurgerToCart(ingredientes, preco);
   };
 

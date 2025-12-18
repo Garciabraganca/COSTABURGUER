@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IngredientIcon } from './IngredientIcon';
 import { cn } from '@/lib/utils';
 import { BurgerLayerStack, LayerIngredient } from './BurgerLayerStack';
+import { Burger3DPreview, Layer3DIngredient } from './Burger3DPreview';
 import { CatalogCategorySlug, getIngredientImage } from '@/lib/assets/ingredientImages';
 
 export type CatalogCategory = {
@@ -45,8 +46,17 @@ const CATEGORY_ICON: Record<CatalogCategorySlug, string> = {
   especial: '⭐',
 };
 
+// Tipo exportado para uso no contexto
+export type BurgerIngredientForCart = {
+  id: string;
+  slug: string;
+  nome: string;
+  preco: number;
+  categoriaSlug: string;
+};
+
 type Props = {
-  onBurgerComplete: (ingredientes: string[], preco: number) => void;
+  onBurgerComplete: (ingredientes: BurgerIngredientForCart[], preco: number) => void;
   currencyFormat: (value: number) => string;
 };
 
@@ -223,6 +233,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [catalogStatus, setCatalogStatus] = useState<'ready' | 'missing' | 'empty' | 'error'>('ready');
   const [missingTables, setMissingTables] = useState<string[]>([]);
   const [seedLoading, setSeedLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'layers' | '3d'>('3d');
   const warnedMissingImage = useRef(new Set<string>());
 
   const BASE_PRICE = 12;
@@ -409,7 +420,16 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
       return;
     }
 
-    onBurgerComplete(selectedIngredients.map((ing) => ing.slug), totalPrice);
+    // Passa os objetos completos dos ingredientes para o carrinho
+    const ingredientesParaCarrinho: BurgerIngredientForCart[] = selectedIngredients.map((ing) => ({
+      id: ing.id,
+      slug: ing.slug,
+      nome: ing.nome,
+      preco: ing.preco,
+      categoriaSlug: ing.categoriaSlug,
+    }));
+
+    onBurgerComplete(ingredientesParaCarrinho, totalPrice);
     setSelectedByCategory({} as SelectedMap);
     setHasStarted(false);
     setActiveCategoryIndex(null);
@@ -525,21 +545,63 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3 text-lg font-semibold">
-                <span className="text-2xl">👀</span>
+                <span className="text-2xl">{viewMode === '3d' ? '🎮' : '👀'}</span>
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/60">Visualização em tempo real</p>
-                  <p>Montagem em camadas</p>
+                  <p>{viewMode === '3d' ? 'Visualização 3D' : 'Montagem em camadas'}</p>
                 </div>
               </div>
-              <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
-                Total: {currencyFormat(totalPrice)}
+              <div className="flex items-center gap-3">
+                {/* Toggle de visualização */}
+                <div className="flex rounded-full bg-white/10 p-1">
+                  <button
+                    onClick={() => setViewMode('layers')}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition",
+                      viewMode === 'layers'
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-white/60 hover:text-white"
+                    )}
+                  >
+                    2D
+                  </button>
+                  <button
+                    onClick={() => setViewMode('3d')}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition",
+                      viewMode === '3d'
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-white/60 hover:text-white"
+                    )}
+                  >
+                    3D
+                  </button>
+                </div>
+                <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
+                  Total: {currencyFormat(totalPrice)}
+                </div>
               </div>
             </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-              <BurgerLayerStack ingredients={sortedIngredients} />
+              {/* Visualização condicional: 3D ou camadas */}
+              {viewMode === '3d' ? (
+                <Burger3DPreview
+                  ingredients={sortedIngredients as Layer3DIngredient[]}
+                  autoRotate={true}
+                  rotationSpeed={0.4}
+                  size={320}
+                  showControls={true}
+                />
+              ) : (
+                <BurgerLayerStack ingredients={sortedIngredients} />
+              )}
               <div className="space-y-4">
-                <p className="text-sm text-white/70">Escolha seus ingredientes e veja o burger ganhar camadas.</p>
+                <p className="text-sm text-white/70">
+                  {viewMode === '3d'
+                    ? 'Arraste para girar o hambúrguer e ver todos os ângulos.'
+                    : 'Escolha seus ingredientes e veja o burger ganhar camadas.'}
+                </p>
                 <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80 shadow-inner shadow-black/30">
                   <p className="font-semibold text-white">Resumo</p>
