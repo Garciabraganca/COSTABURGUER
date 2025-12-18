@@ -4,7 +4,7 @@ import { gerarJwt, getJwtSecret, verificarJwt } from './jwt';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export const USER_ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
+export const USER_ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY', 'CORRETOR'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
