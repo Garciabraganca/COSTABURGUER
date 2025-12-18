@@ -1,18 +1,26 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { calcularPrecoTotal, getIngredientePorId } from '@/lib/ingredientsData';
 
 type Step = { id: string; label: string };
 
 type Option = { id: string; nome: string; desc: string; preco: number };
+
+// Tipo para ingredientes vindos do catálogo (banco de dados)
+export type CartIngredient = {
+  id: string;
+  slug: string;
+  nome: string;
+  preco: number;
+  categoriaSlug: string;
+};
 
 type CartItem = {
   id: string;
   nome: string;
   preco: number;
   camadas: Record<string, { id: string; nome: string }>;
-  ingredientes: string[];
+  ingredientes: CartIngredient[];
 };
 
 type Customer = {
@@ -37,7 +45,7 @@ type OrderContextValue = {
   toggleExtra: (id: string) => void;
 
   cart: CartItem[];
-  addCustomBurgerToCart: (ingredientes: string[], preco?: number) => void;
+  addCustomBurgerToCart: (ingredientes: CartIngredient[], preco?: number) => void;
   removeCartItem: (id: string) => void;
 
   currencyFormat: (value: number) => string;
@@ -108,16 +116,21 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const addCustomBurgerToCart = (ingredientes: string[], preco?: number) => {
-    const camadas = ingredientes.reduce<Record<string, { id: string; nome: string }>>((acc, id) => {
-      const ing = getIngredientePorId(id);
-      if (ing) {
-        acc[ing.category] = { id: ing.id, nome: ing.name };
+  const addCustomBurgerToCart = (ingredientes: CartIngredient[], preco?: number) => {
+    // Agrupa ingredientes por categoria para exibição
+    const camadas = ingredientes.reduce<Record<string, { id: string; nome: string }>>((acc, ing) => {
+      // Usa categoriaSlug como chave (pode ter múltiplos ingredientes por categoria)
+      const key = ing.categoriaSlug;
+      // Se já existe um ingrediente dessa categoria, concatena os nomes
+      if (acc[key]) {
+        acc[key] = { id: acc[key].id + ',' + ing.id, nome: acc[key].nome + ', ' + ing.nome };
+      } else {
+        acc[key] = { id: ing.id, nome: ing.nome };
       }
       return acc;
     }, {});
 
-    const total = typeof preco === 'number' ? preco : calcularPrecoTotal(ingredientes);
+    const total = typeof preco === 'number' ? preco : ingredientes.reduce((sum, ing) => sum + ing.preco, 0);
     const item: CartItem = {
       id: uid(),
       nome: 'Burger personalizado',
@@ -146,7 +159,12 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       nome: 'Burger personalizado',
       quantidade: cart.length || 1,
       ingredientes: cart.flatMap((item, idx) =>
-        item.ingredientes.map((id, orderIndex) => ({ ingredienteId: id, quantidade: 1, orderIndex: orderIndex + idx }))
+        item.ingredientes.map((ing, orderIndex) => ({
+          ingredienteId: ing.id,
+          slug: ing.slug,
+          quantidade: 1,
+          orderIndex: orderIndex + idx
+        }))
       ),
     },
     acompanhamentos: extrasSelecionados.map((id) => ({ acompanhamentoId: id, quantidade: 1 })),
