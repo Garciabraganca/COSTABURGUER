@@ -25,7 +25,15 @@ export async function POST(_request: Request, { params }: { params: { id: string
     const usuario = await prisma.usuario.update({
       where: { id: params.id },
       data: { passwordHash },
-      select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        role: true,
+        ativo: true,
+        projetoValorize: true,
+        createdAt: true
+      }
     });
 
     return NextResponse.json({ ...usuario, tempPassword });

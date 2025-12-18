@@ -23,16 +23,16 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     const { id } = params;
     const body = await request.json();
-    const { nome, role, ativo } = body ?? {};
+    const { nome, role, ativo, projetoValorize } = body ?? {};
 
-    if (nome === undefined && role === undefined && ativo === undefined) {
+    if (nome === undefined && role === undefined && ativo === undefined && projetoValorize === undefined) {
       return NextResponse.json(
         { error: 'Nenhum campo para atualizar' },
         { status: 400 }
       );
     }
 
-    const data: { nome?: string; role?: UserRole; ativo?: boolean } = {};
+    const data: { nome?: string; role?: UserRole; ativo?: boolean; projetoValorize?: boolean } = {};
 
     if (nome !== undefined) data.nome = nome;
 
@@ -48,10 +48,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       data.ativo = Boolean(ativo);
     }
 
+    if (projetoValorize !== undefined) {
+      data.projetoValorize = Boolean(projetoValorize);
+    }
+
     const usuario = await prisma.usuario.update({
       where: { id },
       data,
-      select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
+      select: { id: true, nome: true, email: true, role: true, ativo: true, projetoValorize: true, createdAt: true }
     });
 
     return NextResponse.json(usuario);
@@ -82,7 +86,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     const usuario = await prisma.usuario.update({
       where: { id },
       data: { ativo: false },
-      select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
+      select: { id: true, nome: true, email: true, role: true, ativo: true, projetoValorize: true, createdAt: true }
     });
 
     return NextResponse.json(usuario);

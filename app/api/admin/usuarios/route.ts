@@ -30,7 +30,15 @@ export async function GET(request: Request) {
 
     const usuarios = await prisma.usuario.findMany({
       orderBy: { createdAt: 'desc' },
-      select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        role: true,
+        ativo: true,
+        projetoValorize: true,
+        createdAt: true
+      }
     });
 
     return NextResponse.json(usuarios);
@@ -58,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nome, email, role, senha } = body ?? {};
+    const { nome, email, role, senha, projetoValorize } = body ?? {};
 
     if (!nome || !email || !role) {
       return NextResponse.json(
@@ -102,9 +110,18 @@ export async function POST(request: Request) {
         email,
         role: roleVal,
         passwordHash,
-        ativo: true
+        ativo: true,
+        projetoValorize: Boolean(projetoValorize)
       },
-      select: { id: true, nome: true, email: true, role: true, ativo: true, createdAt: true }
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        role: true,
+        ativo: true,
+        projetoValorize: true,
+        createdAt: true
+      }
     });
 
     return NextResponse.json({ ...usuario, tempPassword: senha ? undefined : senhaFinal }, { status: 201 });
