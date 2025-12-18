@@ -22,13 +22,15 @@ export async function GET(request: Request) {
       select: { status: true, total: true }
     });
 
-    const contagens = pedidos.reduce<Record<string, number>>((acc, pedido) => {
+    const pedidosTipados = pedidos as Array<{ status: string; total: number }>;
+
+    const contagens = pedidosTipados.reduce<Record<string, number>>((acc, pedido) => {
       acc[pedido.status] = (acc[pedido.status] || 0) + 1;
       return acc;
     }, {});
 
-    const ticketMedio = pedidos.length > 0
-      ? pedidos.reduce((sum, p) => sum + p.total, 0) / pedidos.length
+    const ticketMedio = pedidosTipados.length > 0
+      ? pedidosTipados.reduce((sum, p) => sum + p.total, 0) / pedidosTipados.length
       : 0;
 
     return NextResponse.json({ ok: true, kpis: { contagens, ticketMedio, totalPedidos: pedidos.length } });

@@ -136,7 +136,9 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
     let burgerCusto = 0;
 
     const ingredientesRelacao = (burger.ingredientes || []).map(rel => {
-      const ing = ingredienteMap.get(rel.ingredienteId);
+      const ing = ingredienteMap.get(rel.ingredienteId) as
+        | { id: string; preco: number; custo: number }
+        | undefined;
       const quantidade = rel.quantidade ?? 1;
       if (!ing) return null;
       burgerPreco += ing.preco * quantidade;
@@ -162,7 +164,9 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
   });
 
   const acompanhamentosData = (orderData.acompanhamentos || []).map(ac => {
-    const acomp = acompanhamentoMap.get(ac.acompanhamentoId);
+    const acomp = acompanhamentoMap.get(ac.acompanhamentoId) as
+      | { id: string; preco: number; custo: number }
+      | undefined;
     const quantidade = ac.quantidade ?? 1;
     if (!acomp) return null;
     subtotal += acomp.preco * quantidade;
@@ -205,7 +209,9 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
 
     for (const rel of burgersPayload) {
       for (const ingRel of rel.ingredientes || []) {
-        const ing = ingredienteMap.get(ingRel.ingredienteId);
+        const ing = ingredienteMap.get(ingRel.ingredienteId) as
+          | { id: string; estoque: number }
+          | undefined;
         if (!ing) continue;
         const quantidade = ingRel.quantidade ?? 1;
         const estoqueAnterior = ing.estoque;
@@ -228,7 +234,9 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
     }
 
     for (const ac of orderData.acompanhamentos || []) {
-      const acomp = acompanhamentoMap.get(ac.acompanhamentoId);
+      const acomp = acompanhamentoMap.get(ac.acompanhamentoId) as
+        | { id: string; estoque: number }
+        | undefined;
       if (!acomp) continue;
       const quantidade = ac.quantidade ?? 1;
       const estoqueAnterior = acomp.estoque;

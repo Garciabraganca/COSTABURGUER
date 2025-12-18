@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IngredientIcon } from './IngredientIcon';
 import { cn } from '@/lib/utils';
-import { BurgerLayerStack, LayerIngredient } from './BurgerLayerStack';
-import { Burger3DPreview, Layer3DIngredient } from './Burger3DPreview';
+import type { LayerIngredient } from './BurgerLayerStack';
+import BurgerPreview from './BurgerPreview';
 import { CatalogCategorySlug, getIngredientImage } from '@/lib/assets/ingredientImages';
 
 export type CatalogCategory = {
@@ -176,8 +176,13 @@ function CategoryModal({
             })}
 
             {ingredients.length === 0 && (
-              <div className="col-span-full rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-white/70">
-                Nenhum ingrediente disponível
+              <div className="col-span-full">
+                <div className="flex min-h-[220px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-emerald-300/40 bg-emerald-400/5 p-8 text-center text-white/80">
+                  <p className="text-lg font-semibold text-white">Sem ingredientes por aqui</p>
+                  <p className="mt-2 max-w-md text-sm text-white/60">
+                    Avance para a próxima etapa para continuar a montagem.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -233,7 +238,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [catalogStatus, setCatalogStatus] = useState<'ready' | 'missing' | 'empty' | 'error'>('ready');
   const [missingTables, setMissingTables] = useState<string[]>([]);
   const [seedLoading, setSeedLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'layers' | '3d'>('3d');
+  const [builderStage, setBuilderStage] = useState<'build' | 'final'>('build');
   const warnedMissingImage = useRef(new Set<string>());
 
   const BASE_PRICE = 12;
@@ -245,10 +250,10 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     [selectedIngredients]
   );
 
-  const sortedIngredients = useMemo(
+  const sortedIngredients = useMemo<LayerIngredient[]>(
     () =>
       selectedIngredients
-        .map<LayerIngredient>((ing) => ({
+        .map((ing): LayerIngredient => ({
           id: ing.id,
           slug: ing.slug,
           nome: ing.nome,
@@ -354,6 +359,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
   const startFlow = () => {
     setHasStarted(true);
+    setBuilderStage('build');
     setActiveCategoryIndex(0);
   };
 
@@ -420,7 +426,13 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
       return;
     }
 
-    // Passa os objetos completos dos ingredientes para o carrinho
+    setBuilderStage('final');
+    setActiveCategoryIndex(null);
+  };
+
+  const handleConfirmFinish = () => {
+    if (selectedIngredients.length === 0) return;
+
     const ingredientesParaCarrinho: BurgerIngredientForCart[] = selectedIngredients.map((ing) => ({
       id: ing.id,
       slug: ing.slug,
@@ -433,10 +445,16 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     setSelectedByCategory({} as SelectedMap);
     setHasStarted(false);
     setActiveCategoryIndex(null);
+    setBuilderStage('build');
+  };
+
+  const handleReturnToBuildStage = () => {
+    setBuilderStage('build');
   };
 
   const clearAll = () => {
     setSelectedByCategory({} as SelectedMap);
+    setBuilderStage('build');
   };
 
   const handleExitFlow = () => {
@@ -448,6 +466,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     setSelectedByCategory({} as SelectedMap);
     setActiveCategoryIndex(null);
     setHasStarted(false);
+    setBuilderStage('build');
   };
 
   const activeCategory =
@@ -540,43 +559,18 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
         </div>
       )}
 
-      {hasCatalog && (
+      {hasCatalog && builderStage === 'build' && (
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3 text-lg font-semibold">
-                <span className="text-2xl">{viewMode === '3d' ? '🎮' : '👀'}</span>
+                <span className="text-2xl">🍔</span>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">Visualização em tempo real</p>
-                  <p>{viewMode === '3d' ? 'Visualização 3D' : 'Montagem em camadas'}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/60">Preview do burger</p>
+                  <p>Visualização estática em tempo real</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {/* Toggle de visualização */}
-                <div className="flex rounded-full bg-white/10 p-1">
-                  <button
-                    onClick={() => setViewMode('layers')}
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium transition",
-                      viewMode === 'layers'
-                        ? "bg-emerald-500 text-slate-950"
-                        : "text-white/60 hover:text-white"
-                    )}
-                  >
-                    2D
-                  </button>
-                  <button
-                    onClick={() => setViewMode('3d')}
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium transition",
-                      viewMode === '3d'
-                        ? "bg-emerald-500 text-slate-950"
-                        : "text-white/60 hover:text-white"
-                    )}
-                  >
-                    3D
-                  </button>
-                </div>
                 <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
                   Total: {currencyFormat(totalPrice)}
                 </div>
@@ -584,23 +578,10 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-              {/* Visualização condicional: 3D ou camadas */}
-              {viewMode === '3d' ? (
-                <Burger3DPreview
-                  ingredients={sortedIngredients as Layer3DIngredient[]}
-                  autoRotate={true}
-                  rotationSpeed={0.4}
-                  size={320}
-                  showControls={true}
-                />
-              ) : (
-                <BurgerLayerStack ingredients={sortedIngredients} />
-              )}
+              <BurgerPreview mode="build" />
               <div className="space-y-4">
                 <p className="text-sm text-white/70">
-                  {viewMode === '3d'
-                    ? 'Arraste para girar o hambúrguer e ver todos os ângulos.'
-                    : 'Escolha seus ingredientes e veja o burger ganhar camadas.'}
+                  Escolha seus ingredientes e veja o burger ganhar vida. Esta visualização é estável para você focar na seleção.
                 </p>
                 <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80 shadow-inner shadow-black/30">
@@ -624,7 +605,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 onClick={handleFinish}
                 disabled={selectedIngredients.length === 0}
               >
-                <span>Adicionar à Sacola</span>
+                <span>Ir para finalização</span>
                 <span className="text-lg">→</span>
               </button>
             </div>
@@ -693,6 +674,71 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 disabled={selectedIngredients.length === 0}
               >
                 Finalizar Montagem
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {hasCatalog && builderStage === 'final' && (
+        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900 via-slate-950 to-black p-6 shadow-2xl shadow-black/50">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Preview final</p>
+                <h3 className="text-2xl font-bold text-white">Seu burger premium está pronto</h3>
+                <p className="text-sm text-white/60">Visualização 3D fake com iluminação dinâmica.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+                  onClick={handleReturnToBuildStage}
+                >
+                  Voltar para edição
+                </button>
+                <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 ring-1 ring-emerald-400/50">
+                  Total: {currencyFormat(totalPrice)}
+                </div>
+              </div>
+            </div>
+
+            <BurgerPreview mode="final" interactive className="mt-4" />
+            <p className="mt-2 text-center text-xs text-white/60">Dica: mova o mouse para um tilt suave e aprecie o giro contínuo.</p>
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/60">Resumo da montagem</p>
+                <h2 className="text-xl font-semibold">Confira antes de enviar</h2>
+              </div>
+              {selectedIngredients.length > 0 && (
+                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-emerald-400/50">{selectedIngredients.length} ingrediente(s)</span>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 text-white/80 shadow-inner shadow-black/30">
+              <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
+              <div className="flex items-center justify-between text-sm">
+                <span>Total estimado</span>
+                <span className="text-base font-semibold text-emerald-200">{currencyFormat(totalPrice)}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+                onClick={handleReturnToBuildStage}
+              >
+                Voltar para editar
+              </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/60 disabled:shadow-none"
+                onClick={handleConfirmFinish}
+                disabled={selectedIngredients.length === 0}
+              >
+                <span>Adicionar à Sacola</span>
+                <span className="text-lg">✔</span>
               </button>
             </div>
           </div>
