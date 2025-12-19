@@ -1,6 +1,6 @@
 "use client";
 
-import BurgerBuilder, { BurgerIngredientForCart } from '@/components/BurgerBuilder';
+import BurgerBuilder, { BurgerCartPayload } from '@/components/BurgerBuilder';
 import ExtrasChips from '@/components/ExtrasChips';
 import SummaryBox from '@/components/SummaryBox';
 import { useOrder } from '@/context/OrderContext';
@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { SectionCard } from '@/components/widgets/SectionCard';
 import { NeonCard } from '@/components/widgets/NeonCard';
 import { ShoppingBag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function MontarPage() {
   const {
@@ -15,9 +16,15 @@ export default function MontarPage() {
     currencyFormat,
     cart,
   } = useOrder();
+  const router = useRouter();
 
-  const handleBurgerComplete = (ingredientes: BurgerIngredientForCart[], preco: number) => {
-    addCustomBurgerToCart(ingredientes, preco);
+  const handleBurgerComplete = (payload: BurgerCartPayload) => {
+    addCustomBurgerToCart({
+      ingredientes: payload.ingredientes,
+      precoUnitario: payload.precoUnitario,
+      quantidade: payload.quantidade,
+    });
+    router.push('/sacola');
   };
 
   return (
