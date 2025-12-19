@@ -34,8 +34,9 @@ export default function CartView() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-white/60">Total</p>
-              <p className="text-xl font-bold text-emerald-200">{currencyFormat(item.preco)}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/50">{item.quantidade}x</p>
+              <p className="text-sm text-white/60">{currencyFormat(item.precoUnitario)} cada</p>
+              <p className="text-xl font-bold text-emerald-200">{currencyFormat(item.precoTotal)}</p>
             </div>
           </div>
 

@@ -79,8 +79,9 @@ export default function PagamentoPage() {
                         .map((c) => c.nome)
                         .join(' • ')}
                     </p>
+                    <p className="text-xs text-white/50">{item.quantidade}x {currencyFormat(item.precoUnitario)}</p>
                   </div>
-                  <span className="font-semibold text-emerald-200">{currencyFormat(item.preco)}</span>
+                  <span className="font-semibold text-emerald-200">{currencyFormat(item.precoTotal)}</span>
                 </li>
               ))}
             </ul>

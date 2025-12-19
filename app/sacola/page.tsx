@@ -31,13 +31,6 @@ export default function SacolaPage() {
           </SectionCard>
 
           <div className="space-y-4">
-            <SectionCard title="Extras da casa" subtitle="Batata, refri ou sobremesa" className="bg-white/5">
-              <ExtrasChips />
-              {extrasSelecionados.length === 0 && (
-                <p className="mt-2 text-sm text-white/60">Escolha um acompanhamento para deixar a experiência completa.</p>
-              )}
-            </SectionCard>
-
             <SectionCard title="Resumo" subtitle="Valores atualizados em tempo real" className="bg-white/5">
               <SummaryBox />
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -48,7 +41,7 @@ export default function SacolaPage() {
                   Adicionar mais burgers
                 </Link>
                 <Link
-                  href={cart.length === 0 ? '#' : '/entrega'}
+                  href={cart.length === 0 ? '#' : '/pagamento'}
                   className={`inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
                     cart.length === 0
                       ? 'cursor-not-allowed bg-white/10 text-white/50'
@@ -56,9 +49,16 @@ export default function SacolaPage() {
                   }`}
                   aria-disabled={cart.length === 0}
                 >
-                  {cart.length === 0 ? 'Adicione um burger para continuar' : 'Continuar para entrega'}
+                  {cart.length === 0 ? 'Adicione um burger para continuar' : 'Ir para pagamento agora'}
                 </Link>
               </div>
+            </SectionCard>
+
+            <SectionCard title="Adicionais" subtitle="Batata, refri ou sobremesa" className="bg-white/5">
+              <ExtrasChips />
+              {extrasSelecionados.length === 0 && (
+                <p className="mt-2 text-sm text-white/60">Complete o pedido com acompanhamentos (opcional).</p>
+              )}
             </SectionCard>
           </div>
         </div>

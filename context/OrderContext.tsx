@@ -18,7 +18,9 @@ export type CartIngredient = {
 type CartItem = {
   id: string;
   nome: string;
-  preco: number;
+  precoUnitario: number;
+  precoTotal: number;
+  quantidade: number;
   camadas: Record<string, { id: string; nome: string }>;
   ingredientes: CartIngredient[];
 };
@@ -45,7 +47,11 @@ type OrderContextValue = {
   toggleExtra: (id: string) => void;
 
   cart: CartItem[];
-  addCustomBurgerToCart: (ingredientes: CartIngredient[], preco?: number) => void;
+  addCustomBurgerToCart: (payload: {
+    ingredientes: CartIngredient[];
+    precoUnitario?: number;
+    quantidade?: number;
+  }) => void;
   removeCartItem: (id: string) => void;
 
   currencyFormat: (value: number) => string;
@@ -116,7 +122,11 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const addCustomBurgerToCart = (ingredientes: CartIngredient[], preco?: number) => {
+  const addCustomBurgerToCart = ({ ingredientes, precoUnitario, quantidade }: {
+    ingredientes: CartIngredient[];
+    precoUnitario?: number;
+    quantidade?: number;
+  }) => {
     // Agrupa ingredientes por categoria para exibição
     const camadas = ingredientes.reduce<Record<string, { id: string; nome: string }>>((acc, ing) => {
       // Usa categoriaSlug como chave (pode ter múltiplos ingredientes por categoria)
@@ -130,11 +140,14 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       return acc;
     }, {});
 
-    const total = typeof preco === 'number' ? preco : ingredientes.reduce((sum, ing) => sum + ing.preco, 0);
+    const unitValue = typeof precoUnitario === 'number' ? precoUnitario : ingredientes.reduce((sum, ing) => sum + ing.preco, 0);
+    const qty = Math.max(1, quantidade || 1);
     const item: CartItem = {
       id: uid(),
       nome: 'Burger personalizado',
-      preco: total,
+      precoUnitario: unitValue,
+      precoTotal: unitValue * qty,
+      quantidade: qty,
       camadas,
       ingredientes,
     };
@@ -145,7 +158,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const cartSubtotal = useMemo(() => cart.reduce((sum, item) => sum + item.preco, 0), [cart]);
+  const cartSubtotal = useMemo(() => cart.reduce((sum, item) => sum + item.precoTotal, 0), [cart]);
   const deliveryFee = 8;
 
   const updateCustomer = (data: Partial<Customer>) => setCustomer((prev) => ({ ...prev, ...data }));
@@ -157,12 +170,12 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     tipoEntrega: customer.tipoEntrega || 'ENTREGA',
     burger: {
       nome: 'Burger personalizado',
-      quantidade: cart.length || 1,
+      quantidade: cart.reduce((total, item) => total + item.quantidade, 0) || 1,
       ingredientes: cart.flatMap((item, idx) =>
         item.ingredientes.map((ing, orderIndex) => ({
           ingredienteId: ing.id,
           slug: ing.slug,
-          quantidade: 1,
+          quantidade: item.quantidade,
           orderIndex: orderIndex + idx
         }))
       ),
