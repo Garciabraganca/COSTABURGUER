@@ -21,6 +21,7 @@ export type CartIngredient = {
   nome: string;
   preco: number;
   categoriaSlug: string;
+  quantidade: number;
 };
 
 type CartItem = {
@@ -139,18 +140,21 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   }) => {
     // Agrupa ingredientes por categoria para exibição
     const camadas = ingredientes.reduce<Record<string, { id: string; nome: string }>>((acc, ing) => {
-      // Usa categoriaSlug como chave (pode ter múltiplos ingredientes por categoria)
       const key = ing.categoriaSlug;
-      // Se já existe um ingrediente dessa categoria, concatena os nomes
+      const label = ing.quantidade > 1 ? `${ing.nome} (x${ing.quantidade})` : ing.nome;
+
       if (acc[key]) {
-        acc[key] = { id: acc[key].id + ',' + ing.id, nome: acc[key].nome + ', ' + ing.nome };
+        acc[key] = { id: acc[key].id + ',' + ing.id, nome: acc[key].nome + ', ' + label };
       } else {
-        acc[key] = { id: ing.id, nome: ing.nome };
+        acc[key] = { id: ing.id, nome: label };
       }
       return acc;
     }, {});
 
-    const unitValue = typeof precoUnitario === 'number' ? precoUnitario : ingredientes.reduce((sum, ing) => sum + ing.preco, 0);
+    const unitValue =
+      typeof precoUnitario === 'number'
+        ? precoUnitario
+        : ingredientes.reduce((sum, ing) => sum + ing.preco * ing.quantidade, 0);
     const qty = Math.max(1, quantidade || 1);
     const item: CartItem = {
       id: uid(),
@@ -185,7 +189,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         item.ingredientes.map((ing, orderIndex) => ({
           ingredienteId: ing.id,
           slug: ing.slug,
-          quantidade: item.quantidade,
+          quantidade: ing.quantidade,
           orderIndex: orderIndex + idx
         }))
       ),
