@@ -594,7 +594,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 <span className="text-2xl">🍔</span>
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/60">Preview do burger</p>
-                  <p>Visualização estática em tempo real</p>
+                  <p>Veja seu hambúrguer</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -714,7 +714,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Preview final</p>
                 <h3 className="text-2xl font-bold text-white">Seu burger premium está pronto</h3>
-                <p className="text-sm text-white/60">Visualização 3D dinâmica com seus ingredientes reais.</p>
+                <p className="text-sm text-white/60">Veja seu hambúrguer girando automaticamente.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -730,14 +730,9 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             </div>
 
             <div className="mt-6 flex items-center justify-center">
-              <Burger3DPreview
-                ingredients={sortedIngredients}
-                size={360}
-                rotationSpeed={0.45}
-                showControls={false}
-              />
+              <BurgerPreview mode="final" className="max-w-[420px]" />
             </div>
-            <p className="mt-4 text-center text-xs text-white/60">Arraste para girar, toque para pausar e confira cada camada do seu burger.</p>
+            <p className="mt-4 text-center text-xs text-white/60">Rotação moderada e contínua para destacar cada detalhe do burger.</p>
           </div>
 
           <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
