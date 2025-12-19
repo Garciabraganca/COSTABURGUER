@@ -41,7 +41,7 @@ export default function SacolaPage() {
                   Adicionar mais burgers
                 </Link>
                 <Link
-                  href={cart.length === 0 ? '#' : '/pagamento'}
+                  href={cart.length === 0 ? '#' : '/entrega'}
                   className={`inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
                     cart.length === 0
                       ? 'cursor-not-allowed bg-white/10 text-white/50'
@@ -49,7 +49,7 @@ export default function SacolaPage() {
                   }`}
                   aria-disabled={cart.length === 0}
                 >
-                  {cart.length === 0 ? 'Adicione um burger para continuar' : 'Ir para pagamento agora'}
+                  {cart.length === 0 ? 'Adicione um burger para continuar' : 'Informar dados para entrega'}
                 </Link>
               </div>
             </SectionCard>
