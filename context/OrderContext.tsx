@@ -6,6 +6,14 @@ type Step = { id: string; label: string };
 
 type Option = { id: string; nome: string; desc: string; preco: number };
 
+type ExtraOption = {
+  id: string;
+  nome: string;
+  preco: number;
+  categoria?: 'combo' | 'bebida' | 'extra';
+  imagem?: string;
+};
+
 // Tipo para ingredientes vindos do catálogo (banco de dados)
 export type CartIngredient = {
   id: string;
@@ -42,7 +50,7 @@ type OrderContextValue = {
   options: Record<string, Option[]>;
   selections: Record<string, Option | null>;
   selectOption: (stepId: string, option: Option) => void;
-  extras: { id: string; nome: string; preco: number }[];
+  extras: ExtraOption[];
   extrasSelecionados: string[];
   toggleExtra: (id: string) => void;
 
@@ -92,11 +100,13 @@ const DEFAULT_OPTIONS: Record<string, Option[]> = {
   ],
 };
 
-const DEFAULT_EXTRAS = [
-  { id: 'batata', nome: 'Batata frita', preco: 9 },
-  { id: 'sobremesa', nome: 'Sobremesa do dia', preco: 7 },
-  { id: 'refri-lata', nome: 'Refrigerante lata', preco: 6 },
-  { id: 'refri-1l', nome: 'Refrigerante 1L', preco: 10 },
+const DEFAULT_EXTRAS: ExtraOption[] = [
+  { id: 'batata', nome: 'Batata frita', preco: 9, categoria: 'combo' },
+  { id: 'sobremesa', nome: 'Sobremesa do dia', preco: 7, categoria: 'combo' },
+  { id: 'refri-coca-cola', nome: 'Coca-Cola', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/coca-cola.svg' },
+  { id: 'refri-fanta-laranja', nome: 'Fanta Laranja', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/fanta-laranja.svg' },
+  { id: 'refri-fanta-uva', nome: 'Fanta Uva', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/fanta-uva.svg' },
+  { id: 'refri-sprite', nome: 'Sprite', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/sprite.svg' },
 ];
 
 function uid() {

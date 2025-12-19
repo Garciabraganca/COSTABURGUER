@@ -16,7 +16,7 @@ function ExtrasModal({
 }: {
   type: ModalType;
   onClose: () => void;
-  extras: { id: string; nome: string; preco: number }[];
+  extras: { id: string; nome: string; preco: number; imagem?: string; categoria?: string }[];
   extrasSelecionados: string[];
   toggleExtra: (id: string) => void;
   currencyFormat: (value: number) => string;
@@ -29,12 +29,12 @@ function ExtrasModal({
   const icon = isCombo ? '🍟' : '🥤';
 
   // Filter extras based on modal type
-  const filteredExtras = extras.filter(extra => {
+  const filteredExtras = extras.filter((extra) => {
     if (isCombo) {
-      return extra.id === 'batata' || extra.id === 'sobremesa';
-    } else {
-      return extra.id === 'refri-lata' || extra.id === 'refri-1l';
+      return extra.categoria === 'combo' || extra.id === 'batata' || extra.id === 'sobremesa';
     }
+
+    return extra.categoria === 'bebida';
   });
 
   return (
@@ -59,16 +59,33 @@ function ExtrasModal({
             return (
               <button
                 key={extra.id}
-                className={`relative flex flex-col items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-emerald-400/50 hover:bg-white/10 ${isSelected ? 'border-emerald-400/60 shadow-neon-glow' : ''}`}
+                className={`relative flex flex-col gap-3 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-400/50 hover:bg-white/10 ${isSelected ? 'border-emerald-400/60 shadow-neon-glow' : ''}`}
                 onClick={() => toggleExtra(extra.id)}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-base font-semibold">{extra.nome}</span>
-                  {isSelected && <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-100">Selecionado</span>}
+                <div className="flex items-center gap-3">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-slate-900/50 ring-1 ring-white/10">
+                    {extra.imagem ? (
+                      <Image
+                        src={extra.imagem}
+                        alt={extra.nome}
+                        fill
+                        sizes="64px"
+                        className="object-contain p-2"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-2xl">{isCombo ? '🍟' : '🥤'}</div>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-base font-semibold leading-tight">{extra.nome}</span>
+                      {isSelected && <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-100">Selecionado</span>}
+                    </div>
+                    <span className={`mt-1 inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${isSelected ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/10 text-white/80'}`}>
+                      + {currencyFormat(extra.preco)}
+                    </span>
+                  </div>
                 </div>
-                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isSelected ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/10 text-white/80'}`}>
-                  + {currencyFormat(extra.preco)}
-                </span>
               </button>
             );
           })}
@@ -95,9 +112,11 @@ export default function ExtrasChips() {
   const { extras, extrasSelecionados, toggleExtra, currencyFormat } = useOrder();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
+  const beverageIds = extras.filter((extra) => extra.categoria === 'bebida').map((extra) => extra.id);
+
   // Check if any items are selected in each category
-  const hasComboSelected = extrasSelecionados.some(id => id === 'batata' || id === 'sobremesa');
-  const hasBebidaSelected = extrasSelecionados.some(id => id === 'refri-lata' || id === 'refri-1l');
+  const hasComboSelected = extrasSelecionados.some((id) => id === 'batata' || id === 'sobremesa');
+  const hasBebidaSelected = extrasSelecionados.some((id) => beverageIds.includes(id));
 
   return (
     <>
