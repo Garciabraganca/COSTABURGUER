@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import usePushNotifications from '@/hooks/usePushNotifications';
+import { SectionCard } from '@/components/widgets/SectionCard';
 
 export default function PagamentoPage() {
   const { cart, buildOrderPayload, currencyFormat, resetAfterOrder } = useOrder();
@@ -52,40 +53,68 @@ export default function PagamentoPage() {
   }
 
   return (
-    <div>
-      <h2>Pagamento</h2>
-      <p className="step-subtitle">Simule o pagamento aprovado para testar o fluxo.</p>
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black px-4 py-10 text-white">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6">
+        <header className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/60">Pagamento</p>
+          <h2 className="text-3xl font-black sm:text-4xl">Finalize seu pedido</h2>
+        </header>
 
-      {/* Prompt de Notificações */}
-      <NotificationPrompt
-        variant="card"
-        onSubscribed={() => {
-          console.log('[Pagamento] Notificações ativadas!');
-        }}
-      />
+        <NotificationPrompt
+          variant="card"
+          onSubscribed={() => {
+            console.log('[Pagamento] Notificações ativadas!');
+          }}
+        />
 
-      <section className="payment-info">
-        <h3>Resumo do pedido</h3>
-        <ul>
-          {cart.map((item) => (
-            <li key={item.id}>
-              {item.nome}: {currencyFormat(item.preco)}
-            </li>
-          ))}
-        </ul>
-        <SummaryBox />
-      </section>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <SectionCard title="Resumo do pedido" subtitle="Ingredientes e valores" className="bg-white/5">
+            <ul className="space-y-3 text-sm text-white/80">
+              {cart.map((item) => (
+                <li key={item.id} className="flex items-start justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div>
+                    <p className="font-semibold text-white">{item.nome}</p>
+                    <p className="text-xs text-white/60">
+                      {Object.values(item.camadas)
+                        .map((c) => c.nome)
+                        .join(' • ')}
+                    </p>
+                    <p className="text-xs text-white/50">{item.quantidade}x {currencyFormat(item.precoUnitario)}</p>
+                  </div>
+                  <span className="font-semibold text-emerald-200">{currencyFormat(item.precoTotal)}</span>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
 
-      {error && <p className="error-text">{error}</p>}
+          <div className="space-y-4">
+            <SectionCard title="Totais" subtitle="Checagem final" className="bg-white/5">
+              <SummaryBox />
+              {error && <p className="mt-2 text-sm text-red-200">{error}</p>}
+            </SectionCard>
 
-      <div className="navigation-row">
-        <Link href="/entrega" className="btn ghost">
-          Voltar
-        </Link>
-        <button className="btn primary" onClick={handleSimulatePayment} disabled={loading || cart.length === 0}>
-          {loading ? 'Processando...' : 'Simular pagamento aprovado'}
-        </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+              <Link
+                href="/entrega"
+                className="inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+              >
+                Voltar
+              </Link>
+              <button
+                className={`inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                  loading || cart.length === 0
+                    ? 'cursor-not-allowed bg-white/10 text-white/50'
+                    : 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30 hover:scale-[1.02]'
+                }`}
+                onClick={handleSimulatePayment}
+                disabled={loading || cart.length === 0}
+              >
+                {loading ? 'Processando...' : 'Simular pagamento aprovado'}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
