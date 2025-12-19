@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import styles from './BurgerPreview.module.css';
@@ -76,7 +77,15 @@ export function BurgerPreview({ mode, interactive = false, className }: BurgerPr
           style={{ transform: `translateZ(${-depth}px)`, opacity }}
           aria-hidden
         >
-          <img src="/burger-montado.png" alt="" draggable={false} />
+          <Image
+            src="/burger-montado.png"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 768px) 70vw, 420px"
+            className={styles.depthImage}
+            draggable={false}
+          />
         </div>
       );
     });
@@ -91,7 +100,15 @@ export function BurgerPreview({ mode, interactive = false, className }: BurgerPr
         <div className={styles.glow} aria-hidden />
         <div className={styles.stack}>
           {depthLayers}
-          <img src="/burger-montado.png" alt="Hambúrguer premium" className={styles.mainImage} draggable={false} />
+          <Image
+            src="/burger-montado.png"
+            alt="Hambúrguer premium"
+            fill
+            priority
+            sizes="(max-width: 768px) 70vw, 420px"
+            className={styles.mainImage}
+            draggable={false}
+          />
         </div>
       </div>
     </div>

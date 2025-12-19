@@ -50,10 +50,10 @@
 }
 
 .mainImage {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 420px;
-  height: auto;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.25));
   backface-visibility: hidden;
@@ -68,9 +68,11 @@
   transform-style: preserve-3d;
 }
 
-.depthLayer img {
+.depthImage {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 420px;
+  height: 100%;
   opacity: 0.9;
   object-fit: contain;
   mix-blend-mode: normal;
