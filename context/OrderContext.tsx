@@ -6,6 +6,14 @@ type Step = { id: string; label: string };
 
 type Option = { id: string; nome: string; desc: string; preco: number };
 
+type ExtraOption = {
+  id: string;
+  nome: string;
+  preco: number;
+  categoria?: 'combo' | 'bebida' | 'extra';
+  imagem?: string;
+};
+
 // Tipo para ingredientes vindos do catálogo (banco de dados)
 export type CartIngredient = {
   id: string;
@@ -18,7 +26,9 @@ export type CartIngredient = {
 type CartItem = {
   id: string;
   nome: string;
-  preco: number;
+  precoUnitario: number;
+  precoTotal: number;
+  quantidade: number;
   camadas: Record<string, { id: string; nome: string }>;
   ingredientes: CartIngredient[];
 };
@@ -40,12 +50,16 @@ type OrderContextValue = {
   options: Record<string, Option[]>;
   selections: Record<string, Option | null>;
   selectOption: (stepId: string, option: Option) => void;
-  extras: { id: string; nome: string; preco: number }[];
+  extras: ExtraOption[];
   extrasSelecionados: string[];
   toggleExtra: (id: string) => void;
 
   cart: CartItem[];
-  addCustomBurgerToCart: (ingredientes: CartIngredient[], preco?: number) => void;
+  addCustomBurgerToCart: (payload: {
+    ingredientes: CartIngredient[];
+    precoUnitario?: number;
+    quantidade?: number;
+  }) => void;
   removeCartItem: (id: string) => void;
 
   currencyFormat: (value: number) => string;
@@ -86,11 +100,13 @@ const DEFAULT_OPTIONS: Record<string, Option[]> = {
   ],
 };
 
-const DEFAULT_EXTRAS = [
-  { id: 'batata', nome: 'Batata frita', preco: 9 },
-  { id: 'sobremesa', nome: 'Sobremesa do dia', preco: 7 },
-  { id: 'refri-lata', nome: 'Refrigerante lata', preco: 6 },
-  { id: 'refri-1l', nome: 'Refrigerante 1L', preco: 10 },
+const DEFAULT_EXTRAS: ExtraOption[] = [
+  { id: 'batata', nome: 'Batata frita', preco: 9, categoria: 'combo' },
+  { id: 'sobremesa', nome: 'Sobremesa do dia', preco: 7, categoria: 'combo' },
+  { id: 'refri-coca-cola', nome: 'Coca-Cola', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/coca-cola.svg' },
+  { id: 'refri-fanta-laranja', nome: 'Fanta Laranja', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/fanta-laranja.svg' },
+  { id: 'refri-fanta-uva', nome: 'Fanta Uva', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/fanta-uva.svg' },
+  { id: 'refri-sprite', nome: 'Sprite', preco: 6, categoria: 'bebida', imagem: '/refrigerantes/sprite.svg' },
 ];
 
 function uid() {
@@ -116,7 +132,11 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const addCustomBurgerToCart = (ingredientes: CartIngredient[], preco?: number) => {
+  const addCustomBurgerToCart = ({ ingredientes, precoUnitario, quantidade }: {
+    ingredientes: CartIngredient[];
+    precoUnitario?: number;
+    quantidade?: number;
+  }) => {
     // Agrupa ingredientes por categoria para exibição
     const camadas = ingredientes.reduce<Record<string, { id: string; nome: string }>>((acc, ing) => {
       // Usa categoriaSlug como chave (pode ter múltiplos ingredientes por categoria)
@@ -130,11 +150,14 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       return acc;
     }, {});
 
-    const total = typeof preco === 'number' ? preco : ingredientes.reduce((sum, ing) => sum + ing.preco, 0);
+    const unitValue = typeof precoUnitario === 'number' ? precoUnitario : ingredientes.reduce((sum, ing) => sum + ing.preco, 0);
+    const qty = Math.max(1, quantidade || 1);
     const item: CartItem = {
       id: uid(),
       nome: 'Burger personalizado',
-      preco: total,
+      precoUnitario: unitValue,
+      precoTotal: unitValue * qty,
+      quantidade: qty,
       camadas,
       ingredientes,
     };
@@ -145,7 +168,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const cartSubtotal = useMemo(() => cart.reduce((sum, item) => sum + item.preco, 0), [cart]);
+  const cartSubtotal = useMemo(() => cart.reduce((sum, item) => sum + item.precoTotal, 0), [cart]);
   const deliveryFee = 8;
 
   const updateCustomer = (data: Partial<Customer>) => setCustomer((prev) => ({ ...prev, ...data }));
@@ -157,12 +180,12 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     tipoEntrega: customer.tipoEntrega || 'ENTREGA',
     burger: {
       nome: 'Burger personalizado',
-      quantidade: cart.length || 1,
+      quantidade: cart.reduce((total, item) => total + item.quantidade, 0) || 1,
       ingredientes: cart.flatMap((item, idx) =>
         item.ingredientes.map((ing, orderIndex) => ({
           ingredienteId: ing.id,
           slug: ing.slug,
-          quantidade: 1,
+          quantidade: item.quantidade,
           orderIndex: orderIndex + idx
         }))
       ),

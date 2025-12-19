@@ -46,6 +46,26 @@ const CATEGORY_ICON: Record<CatalogCategorySlug, string> = {
   especial: '⭐',
 };
 
+function normalizeCategorySlug(slug?: string | null): CatalogCategorySlug {
+  const value = slug?.toLowerCase();
+  switch (value) {
+    case 'vegetal':
+    case 'vegetais':
+      return 'vegetais';
+    case 'extra':
+    case 'extras':
+      return 'extras';
+    case 'pao':
+    case 'carne':
+    case 'queijo':
+    case 'molho':
+    case 'especial':
+      return value;
+    default:
+      return 'extras';
+  }
+}
+
 // Tipo exportado para uso no contexto
 export type BurgerIngredientForCart = {
   id: string;
@@ -55,8 +75,14 @@ export type BurgerIngredientForCart = {
   categoriaSlug: string;
 };
 
+export type BurgerCartPayload = {
+  ingredientes: BurgerIngredientForCart[];
+  precoUnitario: number;
+  quantidade: number;
+};
+
 type Props = {
-  onBurgerComplete: (ingredientes: BurgerIngredientForCart[], preco: number) => void;
+  onBurgerComplete: (payload: BurgerCartPayload) => void;
   currencyFormat: (value: number) => string;
 };
 
@@ -240,8 +266,13 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const [seedLoading, setSeedLoading] = useState(false);
   const [builderStage, setBuilderStage] = useState<'build' | 'final'>('build');
   const warnedMissingImage = useRef(new Set<string>());
+  const categoriesSectionRef = useRef<HTMLDivElement | null>(null);
+  const [quantity, setQuantity] = useState(1);
 
   const BASE_PRICE = 12;
+
+  const incrementQuantity = () => setQuantity((prev) => Math.min(10, prev + 1));
+  const decrementQuantity = () => setQuantity((prev) => Math.max(1, prev - 1));
 
   const selectedIngredients = useMemo(() => Object.values(selectedByCategory).flat(), [selectedByCategory]);
 
@@ -314,12 +345,18 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
       setCatalogStatus('ready');
       setSeedInfo(data.seeded);
-      setCategories(data.categories || []);
+
+      const normalizedCategories = (data.categories || []).map((cat) => ({
+        ...cat,
+        slug: normalizeCategorySlug(cat.slug),
+      }));
+
+      setCategories(normalizedCategories);
 
       const grouped: Record<string, CatalogIngredient[]> = {};
 
       (data.items || []).forEach((ing) => {
-        const categoriaSlug = (ing.categoriaSlug || ing.categoria?.slug || 'extras') as CatalogCategorySlug;
+        const categoriaSlug = normalizeCategorySlug(ing.categoriaSlug || ing.categoria?.slug || 'extras');
         const manifestImage = getIngredientImage(ing.slug) || getIngredientImage(categoriaSlug);
         const imagem = manifestImage || ing.imagem || null;
 
@@ -351,6 +388,12 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   useEffect(() => {
     loadCatalog();
   }, [loadCatalog]);
+
+  useEffect(() => {
+    if (hasStarted && categoriesSectionRef.current) {
+      categoriesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [hasStarted]);
 
   const handleSeedRequest = async () => {
     setSeedLoading(true);
@@ -421,8 +464,14 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   };
 
   const handleFinish = () => {
-    if (selectedIngredients.length === 0) {
-      alert('Adicione pelo menos um ingrediente antes de finalizar.');
+    const requiredMissing = (['pao', 'carne', 'queijo'] as CatalogCategorySlug[]).filter(
+      (cat) => !(selectedByCategory[cat]?.length)
+    );
+
+    if (requiredMissing.length > 0) {
+      const firstMissingIndex = sortedCategories.findIndex((cat) => cat.slug === requiredMissing[0]);
+      setActiveCategoryIndex(firstMissingIndex >= 0 ? firstMissingIndex : 0);
+      alert('Escolha pelo menos um pão, uma carne e um queijo para continuar.');
       return;
     }
 
@@ -441,11 +490,16 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
       categoriaSlug: ing.categoriaSlug,
     }));
 
-    onBurgerComplete(ingredientesParaCarrinho, totalPrice);
+    onBurgerComplete({
+      ingredientes: ingredientesParaCarrinho,
+      precoUnitario: totalPrice,
+      quantidade: Math.max(1, quantity),
+    });
     setSelectedByCategory({} as SelectedMap);
     setHasStarted(false);
     setActiveCategoryIndex(null);
     setBuilderStage('build');
+    setQuantity(1);
   };
 
   const handleReturnToBuildStage = () => {
@@ -455,6 +509,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const clearAll = () => {
     setSelectedByCategory({} as SelectedMap);
     setBuilderStage('build');
+    setQuantity(1);
   };
 
   const handleExitFlow = () => {
@@ -567,7 +622,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 <span className="text-2xl">🍔</span>
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/60">Preview do burger</p>
-                  <p>Visualização estática em tempo real</p>
+                  <p>Veja seu hambúrguer</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -584,10 +639,37 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                   Escolha seus ingredientes e veja o burger ganhar vida. Esta visualização é estável para você focar na seleção.
                 </p>
                 <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80 shadow-inner shadow-black/30">
-                  <p className="font-semibold text-white">Resumo</p>
-                  <p>{selectedIngredients.length} ingrediente(s) selecionado(s)</p>
-                  <p className="text-emerald-200">{currencyFormat(totalPrice)}</p>
+                <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80 shadow-inner shadow-black/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-white">Resumo</p>
+                      <p>{selectedIngredients.length} ingrediente(s) selecionado(s)</p>
+                    </div>
+                    <div className="text-right text-xs text-white/60">
+                      <p>Qtd.</p>
+                      <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-white">
+                        <button
+                          className="text-lg leading-none text-white/70 hover:text-white"
+                          onClick={decrementQuantity}
+                          aria-label="Diminuir quantidade"
+                        >
+                          −
+                        </button>
+                        <span className="min-w-[36px] text-center text-base font-semibold">{quantity}</span>
+                        <button
+                          className="text-lg leading-none text-white/70 hover:text-white"
+                          onClick={incrementQuantity}
+                          aria-label="Aumentar quantidade"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-emerald-200">{currencyFormat(totalPrice)} cada</p>
+                  <p className="text-white/80">
+                    Total para {quantity} burger{quantity > 1 ? 's' : ''}: <span className="font-semibold text-emerald-100">{currencyFormat(totalPrice * quantity)}</span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -605,13 +687,16 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 onClick={handleFinish}
                 disabled={selectedIngredients.length === 0}
               >
-                <span>Ir para finalização</span>
+                <span>Finalizar montagem</span>
                 <span className="text-lg">→</span>
               </button>
             </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
+          <div
+            ref={categoriesSectionRef}
+            className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur"
+          >
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/60">Escolha os ingredientes</p>
@@ -687,7 +772,6 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Preview final</p>
                 <h3 className="text-2xl font-bold text-white">Seu burger premium está pronto</h3>
-                <p className="text-sm text-white/60">Visualização 3D fake com iluminação dinâmica.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -702,8 +786,9 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               </div>
             </div>
 
-            <BurgerPreview mode="final" interactive className="mt-4" />
-            <p className="mt-2 text-center text-xs text-white/60">Dica: mova o mouse para um tilt suave e aprecie o giro contínuo.</p>
+            <div className="mt-6 flex items-center justify-center">
+              <BurgerPreview mode="final" className="max-w-[420px]" />
+            </div>
           </div>
 
           <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
@@ -718,10 +803,33 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             </div>
 
             <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 text-white/80 shadow-inner shadow-black/30">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-white/80">
+                <span className="font-semibold text-white">Quantidade</span>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                  <button
+                    className="text-lg leading-none text-white/70 hover:text-white"
+                    onClick={decrementQuantity}
+                    aria-label="Diminuir quantidade"
+                  >
+                    −
+                  </button>
+                  <span className="min-w-[36px] text-center text-base font-semibold">{quantity}</span>
+                  <button
+                    className="text-lg leading-none text-white/70 hover:text-white"
+                    onClick={incrementQuantity}
+                    aria-label="Aumentar quantidade"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
               <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
               <div className="flex items-center justify-between text-sm">
                 <span>Total estimado</span>
-                <span className="text-base font-semibold text-emerald-200">{currencyFormat(totalPrice)}</span>
+                <div className="text-right">
+                  <p className="text-xs text-white/60">{quantity}x {currencyFormat(totalPrice)} cada</p>
+                  <p className="text-base font-semibold text-emerald-200">{currencyFormat(totalPrice * quantity)}</p>
+                </div>
               </div>
             </div>
 

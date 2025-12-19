@@ -54,3 +54,59 @@ body {
 main#app {
   flex: 1;
 }
+
+.app-footer {
+  margin-top: auto;
+  background: linear-gradient(135deg, #1f1308 0%, #2b1b11 60%, #3a2618 100%);
+  color: var(--white);
+  padding: 1rem 1.25rem calc(1.2rem + env(safe-area-inset-bottom, 0px));
+  border-top: 3px solid var(--accent-gold);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.app-footer nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.app-footer .nav-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.15rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  border: 1px solid rgba(249, 196, 107, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.app-footer .nav-item:hover,
+.app-footer .nav-item:focus-visible {
+  background: rgba(249, 196, 107, 0.18);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.app-footer .nav-item:active {
+  transform: translateY(0);
+}
+
+@media (min-width: 768px) {
+  .app-footer {
+    padding: 1.1rem 2rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-footer .nav-item {
+    padding: 0.7rem 1.3rem;
+    font-size: 1rem;
+  }
+}

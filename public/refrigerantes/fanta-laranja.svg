@@ -1,0 +1,13 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#ff9800" offset="0%" />
+      <stop stop-color="#ff5722" offset="100%" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="28" fill="url(#bg)" />
+  <text x="40" y="170" font-family="'Poppins', 'Helvetica', 'Arial', sans-serif" font-size="70" font-weight="800" fill="#1b1f3a">Fanta</text>
+  <text x="40" y="220" font-family="'Poppins', 'Helvetica', 'Arial', sans-serif" font-size="48" font-weight="700" fill="#1b1f3a">Laranja</text>
+  <circle cx="320" cy="90" r="34" fill="#fff" fill-opacity="0.18" />
+  <circle cx="330" cy="230" r="24" fill="#fff" fill-opacity="0.16" />
+</svg>
