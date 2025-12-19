@@ -41,7 +41,9 @@ export default function CartView() {
           </div>
 
           <div className="mt-4 flex items-center justify-between text-xs text-white/50">
-            <span>{item.ingredientes.length} ingrediente(s) selecionado(s)</span>
+            <span>
+              {item.ingredientes.reduce((sum, ing) => sum + (ing.quantidade || 1), 0)} ingrediente(s) selecionado(s)
+            </span>
             <button
               className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-red-300 hover:text-red-100"
               onClick={() => removeCartItem(item.id)}

@@ -74,6 +74,7 @@ export type BurgerIngredientForCart = {
   nome: string;
   preco: number;
   categoriaSlug: string;
+  quantidade: number;
 };
 
 export type BurgerCartPayload = {
@@ -87,7 +88,9 @@ type Props = {
   currencyFormat: (value: number) => string;
 };
 
-type SelectedMap = Record<CatalogCategorySlug, CatalogIngredient[]>;
+type SelectedEntry = { ingredient: CatalogIngredient; quantity: number };
+
+type SelectedMap = Record<CatalogCategorySlug, SelectedEntry[]>;
 
 type CategoryModalProps = {
   isOpen: boolean;
@@ -96,6 +99,7 @@ type CategoryModalProps = {
   onBack: () => void;
   onExit: () => void;
   onToggle: (ingredient: CatalogIngredient) => void;
+  onChangeQuantity: (ingredient: CatalogIngredient, delta: number) => void;
   currencyFormat: (value: number) => string;
   isLastCategory: boolean;
   ingredients: CatalogIngredient[];
@@ -110,6 +114,7 @@ function CategoryModal({
   onBack,
   onExit,
   onToggle,
+  onChangeQuantity,
   currencyFormat,
   isLastCategory,
   ingredients,
@@ -118,7 +123,7 @@ function CategoryModal({
 }: CategoryModalProps) {
   if (!isOpen) return null;
 
-  const selectedIds = new Set(selected[category.slug]?.map((ing) => ing.id));
+  const selectedIds = new Set(selected[category.slug]?.map((entry) => entry.ingredient.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
@@ -159,7 +164,9 @@ function CategoryModal({
         <div className="flex max-h-[75vh] flex-1 flex-col">
           <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-6 sm:grid-cols-2 lg:grid-cols-3">
             {ingredients.map((ing) => {
-              const isSelected = selectedIds.has(ing.id);
+              const selectedEntry = selected[category.slug]?.find((entry) => entry.ingredient.id === ing.id);
+              const isSelected = Boolean(selectedEntry);
+              const quantity = selectedEntry?.quantity ?? 0;
 
               return (
                 <button
@@ -197,6 +204,31 @@ function CategoryModal({
                     >
                       {ing.preco > 0 ? `+ ${currencyFormat(ing.preco)}` : 'Incluso'}
                     </span>
+                    {isSelected && (
+                      <div className="mt-3 flex items-center justify-center gap-2 text-sm">
+                        <button
+                          className="h-8 w-8 rounded-full bg-white/10 text-lg text-white/80 transition hover:bg-white/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onChangeQuantity(ing, -1);
+                          }}
+                          aria-label={`Diminuir quantidade de ${ing.nome}`}
+                        >
+                          −
+                        </button>
+                        <span className="min-w-[36px] text-center font-semibold">{quantity}</span>
+                        <button
+                          className="h-8 w-8 rounded-full bg-emerald-500/80 text-lg font-semibold text-slate-900 transition hover:scale-[1.05]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onChangeQuantity(ing, 1);
+                          }}
+                          aria-label={`Aumentar quantidade de ${ing.nome}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -228,18 +260,23 @@ function CategoryModal({
   );
 }
 
-function IngredientsList({
-  selected,
-  onRemove,
-}: {
-  selected: CatalogIngredient[];
+type IngredientsListProps = {
+  selected: SelectedEntry[];
   onRemove: (slug: string) => void;
-}) {
+};
+
+function IngredientsList({ selected, onRemove }: IngredientsListProps) {
   return (
     <div className="flex flex-wrap gap-2">
-      {selected.map((ing) => (
-        <div key={ing.slug} className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm text-white/80">
-          <span>{ing.nome}</span>
+      {selected.map(({ ingredient: ing, quantity }) => (
+        <div
+          key={ing.slug}
+          className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm text-white/80"
+        >
+          <span>
+            {ing.nome}
+            {quantity > 1 && <span className="text-white/60"> ×{quantity}</span>}
+          </span>
           <button
             className="rounded-full bg-white/10 px-2 py-1 text-white/70 transition hover:bg-red-500/20 hover:text-white"
             onClick={() => onRemove(ing.slug)}
@@ -275,18 +312,29 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   const incrementQuantity = () => setQuantity((prev) => Math.min(10, prev + 1));
   const decrementQuantity = () => setQuantity((prev) => Math.max(1, prev - 1));
 
-  const selectedIngredients = useMemo(() => Object.values(selectedByCategory).flat(), [selectedByCategory]);
+  const selectedEntries = useMemo(() => Object.values(selectedByCategory).flat(), [selectedByCategory]);
+
+  const selectedIngredients = useMemo(
+    () =>
+      selectedEntries.flatMap(({ ingredient, quantity }) =>
+        Array.from({ length: quantity }, () => ingredient)
+      ),
+    [selectedEntries]
+  );
+
+  const totalSelectedCount = selectedIngredients.length;
 
   const totalPrice = useMemo(
-    () => BASE_PRICE + selectedIngredients.reduce((total, ing) => total + (ing.preco ?? 0), 0),
-    [selectedIngredients]
+    () =>
+      BASE_PRICE + selectedEntries.reduce((total, entry) => total + (entry.ingredient.preco ?? 0) * entry.quantity, 0),
+    [selectedEntries]
   );
 
   const sortedIngredients = useMemo<LayerIngredient[]>(
     () =>
       selectedIngredients
-        .map((ing): LayerIngredient => ({
-          id: ing.id,
+        .map((ing, idx): LayerIngredient => ({
+          id: `${ing.id}-${idx}`,
           slug: ing.slug,
           nome: ing.nome,
           categoriaSlug: ing.categoriaSlug,
@@ -435,20 +483,60 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
     setSelectedByCategory((prev) => {
       const existing = prev[ingredient.categoriaSlug] || [];
       const rule = CATEGORY_RULES[ingredient.categoriaSlug];
-      const alreadySelected = existing.some((ing) => ing.id === ingredient.id);
+      const existingEntry = existing.find((entry) => entry.ingredient.id === ingredient.id);
 
-      if (alreadySelected) {
-        const filtered = existing.filter((ing) => ing.id !== ingredient.id);
+      if (existingEntry) {
+        const filtered = existing.filter((entry) => entry.ingredient.id !== ingredient.id);
         return { ...prev, [ingredient.categoriaSlug]: filtered };
       }
 
-      let nextList = [...existing, ingredient];
-
-      if (rule?.max && rule.max > 0 && nextList.length > rule.max) {
-        nextList = nextList.slice(nextList.length - rule.max);
+      const currentTotal = existing.reduce((sum, entry) => sum + entry.quantity, 0);
+      const nextTotal = currentTotal + 1;
+      if (rule?.max && rule.max > 0 && nextTotal > rule.max) {
+        return prev; // não excede limite da categoria
       }
 
+      const nextList = [...existing, { ingredient, quantity: 1 }];
       return { ...prev, [ingredient.categoriaSlug]: nextList };
+    });
+  };
+
+  const handleChangeIngredientQuantity = (ingredient: CatalogIngredient, delta: number) => {
+    setSelectedByCategory((prev) => {
+      const existing = prev[ingredient.categoriaSlug] || [];
+      const rule = CATEGORY_RULES[ingredient.categoriaSlug];
+      const entryIndex = existing.findIndex((entry) => entry.ingredient.id === ingredient.id);
+
+      // adicionar se ainda não existe e delta for positivo
+      if (entryIndex === -1 && delta > 0) {
+        const total = existing.reduce((sum, entry) => sum + entry.quantity, 0);
+        const canAdd = !rule?.max || rule.max === null || total + 1 <= rule.max;
+        if (!canAdd) return prev;
+        return {
+          ...prev,
+          [ingredient.categoriaSlug]: [...existing, { ingredient, quantity: 1 }],
+        };
+      }
+
+      if (entryIndex === -1) return prev;
+
+      const entry = existing[entryIndex];
+      let newQuantity = entry.quantity + delta;
+      const totalWithoutCurrent = existing.reduce((sum, e, idx) => sum + (idx === entryIndex ? 0 : e.quantity), 0);
+
+      if (rule?.max && rule.max > 0) {
+        const allowed = rule.max - totalWithoutCurrent;
+        newQuantity = Math.min(newQuantity, allowed);
+      }
+
+      if (newQuantity <= 0) {
+        const filtered = existing.filter((_, idx) => idx !== entryIndex);
+        return { ...prev, [ingredient.categoriaSlug]: filtered };
+      }
+
+      const updated = [...existing];
+      updated[entryIndex] = { ...entry, quantity: newQuantity };
+      return { ...prev, [ingredient.categoriaSlug]: updated };
     });
   };
 
@@ -481,14 +569,15 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   };
 
   const handleConfirmFinish = () => {
-    if (selectedIngredients.length === 0) return;
+    if (totalSelectedCount === 0) return;
 
-    const ingredientesParaCarrinho: BurgerIngredientForCart[] = selectedIngredients.map((ing) => ({
-      id: ing.id,
-      slug: ing.slug,
-      nome: ing.nome,
-      preco: ing.preco,
-      categoriaSlug: ing.categoriaSlug,
+    const ingredientesParaCarrinho: BurgerIngredientForCart[] = selectedEntries.map((entry) => ({
+      id: entry.ingredient.id,
+      slug: entry.ingredient.slug,
+      nome: entry.ingredient.nome,
+      preco: entry.ingredient.preco,
+      categoriaSlug: entry.ingredient.categoriaSlug,
+      quantidade: entry.quantity,
     }));
 
     onBurgerComplete({
@@ -514,7 +603,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
   };
 
   const handleExitFlow = () => {
-    const hasSelection = selectedIngredients.length > 0;
+    const hasSelection = totalSelectedCount > 0;
     if (hasSelection) {
       const confirmExit = window.confirm('Deseja sair? Você perderá a montagem atual.');
       if (!confirmExit) return;
@@ -639,12 +728,12 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 <p className="text-sm text-white/70">
                   Escolha seus ingredientes e veja o burger ganhar vida. Esta visualização é estável para você focar na seleção.
                 </p>
-                <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
+                <IngredientsList selected={selectedEntries} onRemove={handleRemoveIngredient} />
                 <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80 shadow-inner shadow-black/30">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-white">Resumo</p>
-                      <p>{selectedIngredients.length} ingrediente(s) selecionado(s)</p>
+                      <p>{totalSelectedCount} ingrediente(s) selecionado(s)</p>
                     </div>
                     <div className="text-right text-xs text-white/60">
                       <p>Qtd.</p>
@@ -679,14 +768,14 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <button
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
                 onClick={clearAll}
-                disabled={selectedIngredients.length === 0}
+                disabled={totalSelectedCount === 0}
               >
                 Limpar Tudo
               </button>
               <button
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/60 disabled:shadow-none"
                 onClick={handleFinish}
-                disabled={selectedIngredients.length === 0}
+                disabled={totalSelectedCount === 0}
               >
                 <span>Finalizar montagem</span>
                 <span className="text-lg">→</span>
@@ -704,8 +793,8 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 <h2 className="text-xl font-semibold">Categorias</h2>
                 <p className="text-sm text-white/70">Toque em uma categoria para adicionar</p>
               </div>
-              {selectedIngredients.length > 0 && (
-                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">{selectedIngredients.length} selecionado(s)</span>
+              {totalSelectedCount > 0 && (
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">{totalSelectedCount} selecionado(s)</span>
               )}
             </div>
 
@@ -757,7 +846,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <button
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={handleFinish}
-                disabled={selectedIngredients.length === 0}
+                disabled={totalSelectedCount === 0}
               >
                 Finalizar Montagem
               </button>
@@ -798,8 +887,8 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 <p className="text-xs uppercase tracking-[0.2em] text-white/60">Resumo da montagem</p>
                 <h2 className="text-xl font-semibold">Confira antes de enviar</h2>
               </div>
-              {selectedIngredients.length > 0 && (
-                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-emerald-400/50">{selectedIngredients.length} ingrediente(s)</span>
+              {totalSelectedCount > 0 && (
+                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-emerald-400/50">{totalSelectedCount} ingrediente(s)</span>
               )}
             </div>
 
@@ -824,7 +913,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                   </button>
                 </div>
               </div>
-              <IngredientsList selected={selectedIngredients} onRemove={handleRemoveIngredient} />
+              <IngredientsList selected={selectedEntries} onRemove={handleRemoveIngredient} />
               <div className="flex items-center justify-between text-sm">
                 <span>Total estimado</span>
                 <div className="text-right">
@@ -844,7 +933,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <button
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/60 disabled:shadow-none"
                 onClick={handleConfirmFinish}
-                disabled={selectedIngredients.length === 0}
+                disabled={totalSelectedCount === 0}
               >
                 <span>Adicionar à Sacola</span>
                 <span className="text-lg">✔</span>
@@ -862,6 +951,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
           onBack={goToPreviousCategory}
           onExit={handleExitFlow}
           onToggle={handleToggleIngredient}
+          onChangeQuantity={handleChangeIngredientQuantity}
           currencyFormat={currencyFormat}
           isLastCategory={activeCategoryIndex === sortedCategories.length - 1}
           ingredients={ingredientsByCategory[activeCategory.slug] || []}
