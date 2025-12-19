@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { LayerIngredient } from './BurgerLayerStack';
 import BurgerPreview from './BurgerPreview';
 import { CatalogCategorySlug, getIngredientImage } from '@/lib/assets/ingredientImages';
+import { Burger3DPreview } from './Burger3DPreview';
 
 export type CatalogCategory = {
   id: string;
@@ -45,6 +46,26 @@ const CATEGORY_ICON: Record<CatalogCategorySlug, string> = {
   extras: '✨',
   especial: '⭐',
 };
+
+function normalizeCategorySlug(slug?: string | null): CatalogCategorySlug {
+  const value = slug?.toLowerCase();
+  switch (value) {
+    case 'vegetal':
+    case 'vegetais':
+      return 'vegetais';
+    case 'extra':
+    case 'extras':
+      return 'extras';
+    case 'pao':
+    case 'carne':
+    case 'queijo':
+    case 'molho':
+    case 'especial':
+      return value;
+    default:
+      return 'extras';
+  }
+}
 
 // Tipo exportado para uso no contexto
 export type BurgerIngredientForCart = {
@@ -314,12 +335,18 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
 
       setCatalogStatus('ready');
       setSeedInfo(data.seeded);
-      setCategories(data.categories || []);
+
+      const normalizedCategories = (data.categories || []).map((cat) => ({
+        ...cat,
+        slug: normalizeCategorySlug(cat.slug),
+      }));
+
+      setCategories(normalizedCategories);
 
       const grouped: Record<string, CatalogIngredient[]> = {};
 
       (data.items || []).forEach((ing) => {
-        const categoriaSlug = (ing.categoriaSlug || ing.categoria?.slug || 'extras') as CatalogCategorySlug;
+        const categoriaSlug = normalizeCategorySlug(ing.categoriaSlug || ing.categoria?.slug || 'extras');
         const manifestImage = getIngredientImage(ing.slug) || getIngredientImage(categoriaSlug);
         const imagem = manifestImage || ing.imagem || null;
 
@@ -687,7 +714,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Preview final</p>
                 <h3 className="text-2xl font-bold text-white">Seu burger premium está pronto</h3>
-                <p className="text-sm text-white/60">Visualização 3D fake com iluminação dinâmica.</p>
+                <p className="text-sm text-white/60">Visualização 3D dinâmica com seus ingredientes reais.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -702,8 +729,15 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               </div>
             </div>
 
-            <BurgerPreview mode="final" interactive className="mt-4" />
-            <p className="mt-2 text-center text-xs text-white/60">Dica: mova o mouse para um tilt suave e aprecie o giro contínuo.</p>
+            <div className="mt-6 flex items-center justify-center">
+              <Burger3DPreview
+                ingredients={sortedIngredients}
+                size={360}
+                rotationSpeed={0.45}
+                showControls={false}
+              />
+            </div>
+            <p className="mt-4 text-center text-xs text-white/60">Arraste para girar, toque para pausar e confira cada camada do seu burger.</p>
           </div>
 
           <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
