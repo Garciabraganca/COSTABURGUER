@@ -58,7 +58,6 @@ export default function PagamentoPage() {
         <header className="space-y-2">
           <p className="text-xs uppercase tracking-[0.3em] text-white/60">Pagamento</p>
           <h2 className="text-3xl font-black sm:text-4xl">Finalize seu pedido</h2>
-          <p className="text-white/60">Simule o pagamento aprovado para testar o fluxo.</p>
         </header>
 
         <NotificationPrompt

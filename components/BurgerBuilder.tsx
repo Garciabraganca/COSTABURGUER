@@ -632,7 +632,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
                 onClick={handleFinish}
                 disabled={selectedIngredients.length === 0}
               >
-                <span>Ir para finalização</span>
+                <span>Finalizar montagem</span>
                 <span className="text-lg">→</span>
               </button>
             </div>
