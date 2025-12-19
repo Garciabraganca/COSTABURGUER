@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { LayerIngredient } from './BurgerLayerStack';
 import BurgerPreview from './BurgerPreview';
 import { CatalogCategorySlug, getIngredientImage } from '@/lib/assets/ingredientImages';
+import { Burger3DPreview } from './Burger3DPreview';
 
 export type CatalogCategory = {
   id: string;
