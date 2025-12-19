@@ -714,7 +714,6 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Preview final</p>
                 <h3 className="text-2xl font-bold text-white">Seu burger premium está pronto</h3>
-                <p className="text-sm text-white/60">Veja seu hambúrguer girando automaticamente.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -732,7 +731,6 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
             <div className="mt-6 flex items-center justify-center">
               <BurgerPreview mode="final" className="max-w-[420px]" />
             </div>
-            <p className="mt-4 text-center text-xs text-white/60">Rotação moderada e contínua para destacar cada detalhe do burger.</p>
           </div>
 
           <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/30 backdrop-blur">
