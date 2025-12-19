@@ -36,9 +36,7 @@
 }
 
 [data-mode='final'] .stack {
-  animation:
-    spin 8s linear infinite,
-    wobble 6s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite;
   transform: rotateX(var(--tiltX)) rotateY(var(--tiltY));
 }
 
@@ -50,10 +48,10 @@
 }
 
 .mainImage {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 420px;
-  height: auto;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.25));
   backface-visibility: hidden;
@@ -68,9 +66,11 @@
   transform-style: preserve-3d;
 }
 
-.depthLayer img {
+.depthImage {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 420px;
+  height: 100%;
   opacity: 0.9;
   object-fit: contain;
   mix-blend-mode: normal;
@@ -139,22 +139,13 @@
   animation: none;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotateX(var(--tiltX)) rotateY(var(--tiltY)) rotateY(0deg);
-  }
-  100% {
-    transform: rotateX(var(--tiltX)) rotateY(var(--tiltY)) rotateY(360deg);
-  }
-}
-
-@keyframes wobble {
+@keyframes float {
   0%,
   100% {
     transform: translateY(0px) rotateX(var(--tiltX)) rotateY(var(--tiltY));
   }
   50% {
-    transform: translateY(-6px) rotateX(calc(var(--tiltX) + 2deg)) rotateY(calc(var(--tiltY) + 1deg));
+    transform: translateY(-10px) rotateX(var(--tiltX)) rotateY(var(--tiltY));
   }
 }
 
