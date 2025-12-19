@@ -22,9 +22,36 @@ export default function PagamentoPage() {
     try {
       const payload = buildOrderPayload();
 
+      const enderecoLimpo = payload.endereco
+        ?.split(',')
+        .map((parte) => parte.trim())
+        .filter(Boolean)
+        .join(', ');
+
+      const payloadNormalizado = {
+        ...payload,
+        nome: payload.nome?.trim(),
+        celular: payload.celular?.trim(),
+        endereco: enderecoLimpo,
+      };
+
+      const camposFaltantes = [
+        !payloadNormalizado.nome && 'nome',
+        !payloadNormalizado.celular && 'celular',
+        !payloadNormalizado.endereco && 'endereço',
+        !payloadNormalizado.tipoEntrega && 'tipo de entrega',
+        cart.length === 0 && 'itens na sacola',
+      ].filter(Boolean) as string[];
+
+      if (camposFaltantes.length) {
+        setError(`Preencha ${camposFaltantes.join(', ')} antes de finalizar o pagamento.`);
+        setLoading(false);
+        return;
+      }
+
       // Adiciona o endpoint da subscription ao pedido para vincular
       const payloadWithSubscription = {
-        ...payload,
+        ...payloadNormalizado,
         pushEndpoint: subscription?.endpoint,
       };
 
@@ -33,10 +60,10 @@ export default function PagamentoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadWithSubscription),
       });
-      if (!response.ok) {
-        throw new Error('Não foi possível criar o pedido.');
-      }
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || 'Não foi possível criar o pedido.');
+      }
       resetAfterOrder();
 
       // Redireciona para a página de acompanhamento se tiver notificações ativas
