@@ -25,7 +25,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const usuario = await prisma.usuario.findUnique({ where: { email } });
+    const usuario = await prisma.usuario.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        role: true,
+        passwordHash: true,
+        ativo: true,
+      },
+    });
 
     if (!usuario || !usuario.ativo) {
       return NextResponse.json(
