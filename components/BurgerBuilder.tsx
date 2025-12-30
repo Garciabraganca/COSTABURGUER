@@ -545,7 +545,7 @@ export default function BurgerBuilder({ onBurgerComplete, currencyFormat }: Prop
       const next: SelectedMap = {} as SelectedMap;
 
       (Object.keys(prev) as CatalogCategorySlug[]).forEach((category) => {
-        next[category] = (prev[category] || []).filter((ing) => ing.slug !== slug);
+        next[category] = (prev[category] || []).filter((ing) => ing.ingredient.slug !== slug);
       });
 
       return next;
