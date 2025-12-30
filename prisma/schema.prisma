@@ -146,6 +146,12 @@ model Pedido {
   // Observações
   observacoes   String?
 
+  // Dados de pagamento (Mercado Pago)
+  statusPagamento         String?  @default("PENDENTE") // PENDENTE, AGUARDANDO_PAGAMENTO, PAGO, PAGAMENTO_REJEITADO, REEMBOLSADO
+  mercadoPagoPaymentId    String?  @map("mp_payment_id")
+  mercadoPagoPreferenceId String?  @map("mp_preference_id")
+  formaPagamento          String?  // PIX, CARTAO_CREDITO, CARTAO_DEBITO, BOLETO
+
   // Dados legados (mantidos para compatibilidade)
   itens         Json?    // JSON com dados do pedido (mantido por compatibilidade)
 
@@ -156,6 +162,7 @@ model Pedido {
 
   @@index([status])
   @@index([createdAt])
+  @@index([statusPagamento])
 }
 
 // Item de burger dentro de um pedido

@@ -1,5 +1,3 @@
-import { Role } from '@prisma/client';
-
 import { hashSenha } from '../lib/auth';
 import { prisma } from '../lib/prisma';
 
@@ -26,7 +24,7 @@ async function main() {
     where: { email },
     update: {
       nome: 'Admin',
-      role: Role.ADMIN,
+      role: 'ADMIN',
       ativo: true,
       passwordHash,
       passwordUpdatedAt: now
@@ -34,7 +32,7 @@ async function main() {
     create: {
       email,
       nome: 'Admin',
-      role: Role.ADMIN,
+      role: 'ADMIN',
       ativo: true,
       passwordHash,
       passwordUpdatedAt: now
