@@ -32,6 +32,8 @@ type OrderPayload = {
   burgers?: BurgerPayload[];
   acompanhamentos?: AcompanhamentoPayload[];
   pushEndpoint?: string;
+  formaPagamento?: string;
+  statusPagamento?: string;
 };
 
 export async function GET() {
@@ -202,6 +204,8 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
         observacoes: orderData.observacoes || null,
         itens: toPrismaJson(orderData),
         status: "CONFIRMADO",
+        formaPagamento: orderData.formaPagamento || null,
+        statusPagamento: orderData.statusPagamento || "PENDENTE",
         burgers: { create: burgersData },
         acompanhamentos: { create: acompanhamentosData }
       }
