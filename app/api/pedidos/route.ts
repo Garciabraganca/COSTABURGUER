@@ -34,6 +34,7 @@ type OrderPayload = {
   pushEndpoint?: string;
   formaPagamento?: string;
   statusPagamento?: string;
+  cupomCodigo?: string; // Código do cupom de desconto
 };
 
 export async function GET() {
@@ -185,7 +186,24 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
     ? await buscarTaxaEntrega()
     : 0;
 
-  const total = subtotal + taxaEntrega;
+  // Processa cupom de desconto se informado
+  let desconto = 0;
+  let cupomValidado: { id: string; codigo: string } | null = null;
+
+  if (orderData.cupomCodigo) {
+    const cupomResult = await validarECalcularCupom(
+      orderData.cupomCodigo,
+      subtotal,
+      orderData.celular
+    );
+
+    if (cupomResult.valido && cupomResult.cupom) {
+      desconto = cupomResult.valorDesconto;
+      cupomValidado = cupomResult.cupom;
+    }
+  }
+
+  const total = subtotal + taxaEntrega - desconto;
   const lucro = total - custoTotal;
 
   const pedido = await prisma!.$transaction(async (tx) => {
@@ -197,7 +215,7 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
         tipoEntrega: orderData.tipoEntrega,
         subtotal,
         taxaEntrega,
-        desconto: 0,
+        desconto,
         total,
         custoTotal,
         lucro,
@@ -210,6 +228,25 @@ async function criarPedidoComCustos(orderData: Omit<OrderPayload, "pushEndpoint"
         acompanhamentos: { create: acompanhamentosData }
       }
     });
+
+    // Registra uso do cupom se aplicado
+    if (cupomValidado) {
+      await tx.pedidoCupom.create({
+        data: {
+          pedidoId: novoPedido.id,
+          cupomId: cupomValidado.id,
+          codigoUsado: cupomValidado.codigo,
+          valorDesconto: desconto,
+          clienteCelular: orderData.celular
+        }
+      });
+
+      // Incrementa contador de uso do cupom
+      await tx.cupom.update({
+        where: { id: cupomValidado.id },
+        data: { usosAtual: { increment: 1 } }
+      });
+    }
 
     for (const rel of burgersPayload) {
       for (const ingRel of rel.ingredientes || []) {
@@ -274,5 +311,86 @@ async function buscarTaxaEntrega() {
   } catch (error) {
     console.error("Erro ao buscar taxa de entrega", error);
     return 0;
+  }
+}
+
+// Valida e calcula desconto de cupom
+async function validarECalcularCupom(
+  codigo: string,
+  valorPedido: number,
+  celular: string
+): Promise<{
+  valido: boolean;
+  cupom?: { id: string; codigo: string };
+  valorDesconto: number;
+  error?: string;
+}> {
+  try {
+    const codigoNormalizado = codigo.toUpperCase().trim();
+
+    const cupom = await prisma!.cupom.findUnique({
+      where: { codigo: codigoNormalizado }
+    });
+
+    if (!cupom) {
+      return { valido: false, valorDesconto: 0, error: 'Cupom não encontrado' };
+    }
+
+    if (!cupom.ativo) {
+      return { valido: false, valorDesconto: 0, error: 'Cupom inativo' };
+    }
+
+    const agora = new Date();
+    if (cupom.dataInicio > agora) {
+      return { valido: false, valorDesconto: 0, error: 'Cupom ainda não válido' };
+    }
+
+    if (cupom.dataFim && cupom.dataFim < agora) {
+      return { valido: false, valorDesconto: 0, error: 'Cupom expirado' };
+    }
+
+    if (cupom.limiteUsos && cupom.usosAtual >= cupom.limiteUsos) {
+      return { valido: false, valorDesconto: 0, error: 'Limite de usos atingido' };
+    }
+
+    if (cupom.usoUnico && celular) {
+      const usoExistente = await prisma!.pedidoCupom.findFirst({
+        where: { cupomId: cupom.id, clienteCelular: celular }
+      });
+
+      if (usoExistente) {
+        return { valido: false, valorDesconto: 0, error: 'Cupom já utilizado' };
+      }
+    }
+
+    if (cupom.valorMinimo && valorPedido < cupom.valorMinimo) {
+      return { valido: false, valorDesconto: 0, error: `Valor mínimo: R$ ${cupom.valorMinimo}` };
+    }
+
+    // Calcula desconto
+    let valorDesconto: number;
+
+    if (cupom.tipoDesconto === 'percentual') {
+      valorDesconto = (valorPedido * cupom.valorDesconto) / 100;
+
+      if (cupom.valorMaximo && valorDesconto > cupom.valorMaximo) {
+        valorDesconto = cupom.valorMaximo;
+      }
+    } else {
+      valorDesconto = cupom.valorDesconto;
+
+      if (valorDesconto > valorPedido) {
+        valorDesconto = valorPedido;
+      }
+    }
+
+    return {
+      valido: true,
+      cupom: { id: cupom.id, codigo: cupom.codigo },
+      valorDesconto: Math.round(valorDesconto * 100) / 100
+    };
+  } catch (error) {
+    console.error('Erro ao validar cupom:', error);
+    return { valido: false, valorDesconto: 0, error: 'Erro ao validar cupom' };
   }
 }
