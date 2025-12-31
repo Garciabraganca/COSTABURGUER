@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 import { AdminNav } from '@/components/AdminNav';
 
-const ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY', 'CORRETOR'] as const;
+const ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
 
 export default function NovoUsuarioPage() {
   const [nome, setNome] = useState('');
@@ -14,7 +14,6 @@ export default function NovoUsuarioPage() {
   const [senha, setSenha] = useState('');
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState('');
-  const [projetoValorize, setProjetoValorize] = useState(false);
 
   const salvar = async () => {
     setMensagem('');
@@ -22,7 +21,7 @@ export default function NovoUsuarioPage() {
     const res = await fetch('/api/admin/usuarios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, email, role, senha: senha || undefined, projetoValorize })
+      body: JSON.stringify({ nome, email, role, senha: senha || undefined })
     });
 
     const data = await res.json().catch(() => ({}));
@@ -57,14 +56,6 @@ export default function NovoUsuarioPage() {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={projetoValorize}
-            onChange={e => setProjetoValorize(e.target.checked)}
-          />
-          <span>Projeto Valorize (libera pacote de renovação)</span>
         </label>
         <label>
           Senha inicial (opcional)

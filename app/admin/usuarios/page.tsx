@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
-const ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY', 'CORRETOR'] as const;
+const ROLES = ['ADMIN', 'GERENTE', 'COZINHEIRO', 'MOTOBOY'] as const;
 type Role = (typeof ROLES)[number];
 
 type Usuario = {
@@ -12,7 +12,6 @@ type Usuario = {
   email: string;
   role: Role;
   ativo: boolean;
-  projetoValorize: boolean;
   createdAt: string;
 };
 
@@ -36,7 +35,6 @@ export default function UsuariosAdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState('');
   const [editRole, setEditRole] = useState<Role>('GERENTE');
-  const [novoProjetoValorize, setNovoProjetoValorize] = useState(false);
 
   const carregarUsuarios = async () => {
     setLoading(true);
@@ -90,8 +88,7 @@ export default function UsuariosAdminPage() {
           nome: novoNome,
           email: novoEmail,
           role: novoRole,
-          senha: novaSenha || undefined,
-          projetoValorize: novoProjetoValorize
+          senha: novaSenha || undefined
         })
       });
 
@@ -108,7 +105,6 @@ export default function UsuariosAdminPage() {
       setNovoEmail('');
       setNovaSenha('');
       setNovoRole('GERENTE');
-      setNovoProjetoValorize(false);
     } catch (err) {
       console.error(err);
       setErro((err as Error).message || 'Erro ao criar usuário');
@@ -166,32 +162,6 @@ export default function UsuariosAdminPage() {
     }
   };
 
-  const handleToggleProjetoValorize = async (usuario: Usuario) => {
-    setErro('');
-    setMensagem('');
-    try {
-      const res = await fetch(`/api/admin/usuarios/${usuario.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projetoValorize: !usuario.projetoValorize })
-      });
-      const data: ApiUserResponse = await res.json().catch(() => ({} as any));
-      if (!res.ok) {
-        throw new Error((data as any)?.error || 'Erro ao atualizar acesso');
-      }
-
-      setUsuarios(prev => prev.map(u => (u.id === usuario.id ? data : u)));
-      setMensagem(
-        data.projetoValorize
-          ? 'Corretores marcados como Projeto Valorize agora enxergam o pacote de renovação.'
-          : 'Flag de Projeto Valorize removida para este corretor.'
-      );
-    } catch (err) {
-      console.error(err);
-      setErro((err as Error).message || 'Erro ao atualizar acesso');
-    }
-  };
-
   const iniciarEdicao = (usuario: Usuario) => {
     setEditingId(usuario.id);
     setEditNome(usuario.nome);
@@ -236,7 +206,7 @@ export default function UsuariosAdminPage() {
         <div>
           <h1 style={{ margin: 0 }}>Usuários</h1>
           <p style={{ margin: '4px 0', color: '#555' }}>
-            Gerencie acessos da equipe (ADMIN, GERENTE, COZINHEIRO, MOTOBOY, CORRETOR) e flags de Projeto Valorize
+            Gerencie acessos da equipe (ADMIN, GERENTE, COZINHEIRO, MOTOBOY)
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -329,7 +299,6 @@ export default function UsuariosAdminPage() {
               <th style={{ padding: '12px', borderBottom: '1px solid #eee' }}>Email</th>
               <th style={{ padding: '12px', borderBottom: '1px solid #eee' }}>Role</th>
               <th style={{ padding: '12px', borderBottom: '1px solid #eee' }}>Ativo</th>
-              <th style={{ padding: '12px', borderBottom: '1px solid #eee' }}>Projeto Valorize</th>
               <th style={{ padding: '12px', borderBottom: '1px solid #eee' }}>Criado</th>
               <th style={{ padding: '12px', borderBottom: '1px solid #eee' }}>Ações</th>
             </tr>
@@ -337,13 +306,13 @@ export default function UsuariosAdminPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} style={{ padding: '16px', textAlign: 'center' }}>
+                <td colSpan={6} style={{ padding: '16px', textAlign: 'center' }}>
                   Carregando...
                 </td>
               </tr>
             ) : usuariosFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '16px', textAlign: 'center' }}>
+                <td colSpan={6} style={{ padding: '16px', textAlign: 'center' }}>
                   Nenhum usuário encontrado.
                 </td>
               </tr>
@@ -387,16 +356,6 @@ export default function UsuariosAdminPage() {
                         onChange={() => handleToggleAtivo(usuario)}
                       />
                       {usuario.ativo ? 'Ativo' : 'Inativo'}
-                    </label>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                      <input
-                        type="checkbox"
-                        checked={usuario.projetoValorize}
-                        onChange={() => handleToggleProjetoValorize(usuario)}
-                      />
-                      {usuario.projetoValorize ? 'Habilitado' : 'Restrito'}
                     </label>
                   </td>
                   <td style={{ padding: '12px' }}>
@@ -541,14 +500,6 @@ export default function UsuariosAdminPage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="checkbox"
-                checked={novoProjetoValorize}
-                onChange={e => setNovoProjetoValorize(e.target.checked)}
-              />
-              <span>Marcar como Projeto Valorize (acesso ao pacote de renovação)</span>
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span>Senha inicial (opcional)</span>
