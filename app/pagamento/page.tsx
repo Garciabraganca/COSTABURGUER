@@ -325,7 +325,7 @@ export default function PagamentoPage() {
                   'Processando...'
                 ) : paymentMethod === 'mercadopago' ? (
                   <>
-                    <span className="mr-2">💳</span> Pagar com Mercado Pago
+                    <span className="mr-2">💳</span> Ir para Pagamento
                   </>
                 ) : (
                   'Finalizar Pedido'
