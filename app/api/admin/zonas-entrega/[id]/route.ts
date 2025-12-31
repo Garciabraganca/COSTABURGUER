@@ -7,7 +7,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 // GET /api/admin/zonas-entrega/[id]
 export async function GET(request: Request, context: RouteContext) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   const { id } = await context.params;
 
@@ -32,7 +32,7 @@ export async function GET(request: Request, context: RouteContext) {
 // PATCH /api/admin/zonas-entrega/[id]
 export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   const { id } = await context.params;
 
@@ -78,7 +78,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 // DELETE /api/admin/zonas-entrega/[id]
 export async function DELETE(request: Request, context: RouteContext) {
   const auth = await requireRole(request, ['ADMIN']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   const { id } = await context.params;
 

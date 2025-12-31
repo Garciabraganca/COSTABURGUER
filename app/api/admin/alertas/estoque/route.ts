@@ -7,7 +7,7 @@ import pushStore from '@/lib/pushStore';
 // GET /api/admin/alertas/estoque - Lista alertas de estoque baixo
 export async function GET(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
 // POST /api/admin/alertas/estoque - Verifica e cria alertas + envia notificações
 export async function POST(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });
@@ -270,7 +270,7 @@ export async function POST(request: Request) {
 // PATCH /api/admin/alertas/estoque - Atualiza status de alertas
 export async function PATCH(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });

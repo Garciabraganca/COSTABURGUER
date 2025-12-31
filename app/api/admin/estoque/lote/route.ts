@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth';
 // POST /api/admin/estoque/lote - Operação em lote de estoque
 export async function POST(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
 // GET /api/admin/estoque/lote - Template para importação
 export async function GET(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });

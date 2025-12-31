@@ -7,7 +7,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 // GET /api/admin/cupons/[id] - Busca um cupom específico
 export async function GET(request: Request, context: RouteContext) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   const { id } = await context.params;
 
@@ -51,7 +51,7 @@ export async function GET(request: Request, context: RouteContext) {
 // PATCH /api/admin/cupons/[id] - Atualiza um cupom
 export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   const { id } = await context.params;
 
@@ -147,7 +147,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 // DELETE /api/admin/cupons/[id] - Remove um cupom
 export async function DELETE(request: Request, context: RouteContext) {
   const auth = await requireRole(request, ['ADMIN']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   const { id } = await context.params;
 

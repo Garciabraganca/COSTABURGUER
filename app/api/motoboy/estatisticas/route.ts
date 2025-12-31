@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth';
 // GET /api/motoboy/estatisticas - Estatísticas do motoboy
 export async function GET(request: Request) {
   const auth = await requireRole(request, ['MOTOBOY', 'ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });

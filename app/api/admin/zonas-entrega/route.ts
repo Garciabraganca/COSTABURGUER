@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth';
 // GET /api/admin/zonas-entrega - Lista todas as zonas
 export async function GET(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 // POST /api/admin/zonas-entrega - Cria nova zona
 export async function POST(request: Request) {
   const auth = await requireRole(request, ['ADMIN', 'GERENTE']);
-  if (!auth.ok) return auth.response;
+  if (auth.ok === false) return auth.response;
 
   if (!prisma) {
     return NextResponse.json({ error: 'Banco de dados não configurado' }, { status: 503 });
