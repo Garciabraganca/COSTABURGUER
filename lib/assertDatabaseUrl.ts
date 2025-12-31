@@ -1,5 +1,5 @@
 const ERROR_MESSAGE =
-  "DATABASE_URL must point to Supabase (db.<ref>.supabase.co:5432) or Supabase Pooler (*.pooler.supabase.com:6543). Prisma Data Proxy (db.prisma.io) is not allowed.";
+  "DATABASE_URL must point to Supabase, Neon, or compatible PostgreSQL provider with sslmode=require.";
 
 export type DatabaseUrlValidationSuccess = {
   ok: true;
@@ -9,6 +9,7 @@ export type DatabaseUrlValidationSuccess = {
   isPooler: boolean;
   hasSslmode: boolean;
   hasPgbouncer: boolean;
+  provider: 'supabase' | 'neon' | 'other';
 };
 
 export type DatabaseUrlValidationFailure = {
@@ -39,9 +40,16 @@ export function validateDatabaseUrl(url = process.env.DATABASE_URL): DatabaseUrl
   const hasPgbouncer = parsedUrl.searchParams.get("pgbouncer") === "true";
 
   const normalizedUrl = parsedUrl.toString();
+
+  // Patterns for different providers
   const supabaseHostPattern = /^db\.[^.]+\.supabase\.co$/;
-  const poolerHostPattern = /\.pooler\.supabase\.com$/;
-  const isPooler = poolerHostPattern.test(host);
+  const supabasePoolerPattern = /\.pooler\.supabase\.com$/;
+  const neonHostPattern = /\.neon\.tech$/;
+
+  const isSupabase = supabaseHostPattern.test(host);
+  const isSupabasePooler = supabasePoolerPattern.test(host);
+  const isNeon = neonHostPattern.test(host);
+  const isPooler = isSupabasePooler || host.includes('-pooler');
 
   const details = {
     normalizedUrl,
@@ -50,17 +58,37 @@ export function validateDatabaseUrl(url = process.env.DATABASE_URL): DatabaseUrl
     hasSslmode,
     hasPgbouncer,
     isPooler,
+    isSupabase,
+    isNeon,
   } satisfies Record<string, unknown>;
 
+  // Block Prisma Data Proxy
   if (host.endsWith("db.prisma.io")) {
     return { ok: false, reason: ERROR_MESSAGE, details } as const;
   }
 
+  // Require SSL for production
   if (!hasSslmode) {
     return { ok: false, reason: ERROR_MESSAGE, details } as const;
   }
 
-  if (supabaseHostPattern.test(host)) {
+  // Neon validation
+  if (isNeon) {
+    const resolvedPort = port || "5432";
+    return {
+      ok: true,
+      normalizedUrl,
+      host,
+      port: Number(resolvedPort),
+      isPooler,
+      hasSslmode,
+      hasPgbouncer,
+      provider: 'neon',
+    } as const;
+  }
+
+  // Supabase direct connection
+  if (isSupabase) {
     const resolvedPort = port || "5432";
     if (resolvedPort !== "5432") {
       return { ok: false, reason: ERROR_MESSAGE, details } as const;
@@ -74,10 +102,12 @@ export function validateDatabaseUrl(url = process.env.DATABASE_URL): DatabaseUrl
       isPooler,
       hasSslmode,
       hasPgbouncer,
+      provider: 'supabase',
     } as const;
   }
 
-  if (isPooler) {
+  // Supabase pooler connection
+  if (isSupabasePooler) {
     if (port !== "6543") {
       return { ok: false, reason: ERROR_MESSAGE, details } as const;
     }
@@ -93,6 +123,7 @@ export function validateDatabaseUrl(url = process.env.DATABASE_URL): DatabaseUrl
       isPooler,
       hasSslmode,
       hasPgbouncer,
+      provider: 'supabase',
     } as const;
   }
 
