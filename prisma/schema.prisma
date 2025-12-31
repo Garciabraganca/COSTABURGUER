@@ -404,6 +404,101 @@ model PedidoCupom {
 }
 
 // ============================================
+// ZONAS DE ENTREGA
+// ============================================
+
+model ZonaEntrega {
+  id            String   @id @default(cuid())
+  nome          String   // Ex: "Centro", "Zona Sul", "Até 3km"
+  descricao     String?
+
+  // Tipo de zona
+  tipo          String   @default("bairro") // 'bairro', 'distancia', 'cep'
+
+  // Para tipo 'bairro': lista de bairros
+  bairros       String[] // Array de nomes de bairros
+
+  // Para tipo 'distancia': raio em km
+  distanciaMin  Float?   // Distância mínima (km)
+  distanciaMax  Float?   // Distância máxima (km)
+
+  // Para tipo 'cep': faixas de CEP
+  cepInicio     String?
+  cepFim        String?
+
+  // Taxa de entrega
+  taxaEntrega   Float    @default(0)
+
+  // Tempo estimado (minutos)
+  tempoEstimado Int?
+
+  // Ordenação e status
+  ordem         Int      @default(0)
+  ativo         Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([ativo])
+  @@index([tipo])
+}
+
+// ============================================
+// HISTÓRICO DE PREÇOS
+// ============================================
+
+model HistoricoPreco {
+  id            String   @id @default(cuid())
+
+  // Tipo de item
+  tipoItem      String   // 'ingrediente' ou 'acompanhamento'
+  itemId        String
+
+  // Preços
+  precoAnterior Float
+  precoNovo     Float
+  custoAnterior Float?
+  custoNovo     Float?
+
+  // Quem alterou
+  usuarioId     String?
+  usuarioNome   String?
+
+  // Motivo da alteração
+  motivo        String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([tipoItem, itemId])
+  @@index([createdAt])
+}
+
+// ============================================
+// CONFIGURAÇÕES DE LIMITES DO BURGER
+// ============================================
+
+model LimiteBurger {
+  id                  String   @id @default(cuid())
+
+  // Limites gerais
+  maxIngredientes     Int      @default(15)    // Máximo de ingredientes por burger
+  maxPorCategoria     Int      @default(5)     // Máximo por categoria
+  maxBurgersNoPedido  Int      @default(10)    // Máximo de burgers por pedido
+
+  // Limites específicos por categoria (JSON)
+  limitesPorCategoria Json?    // Ex: {"pao": 2, "carne": 4, "queijo": 3}
+
+  // Valor mínimo/máximo do burger
+  valorMinimo         Float?   // Valor mínimo do burger
+  valorMaximo         Float?   // Valor máximo do burger
+
+  ativo               Boolean  @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ============================================
 // ALERTAS DE ESTOQUE
 // ============================================
 
