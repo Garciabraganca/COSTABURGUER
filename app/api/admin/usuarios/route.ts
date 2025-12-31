@@ -36,7 +36,6 @@ export async function GET(request: Request) {
         email: true,
         role: true,
         ativo: true,
-        projetoValorize: true,
         createdAt: true
       }
     });
@@ -66,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nome, email, role, senha, projetoValorize } = body ?? {};
+    const { nome, email, role, senha } = body ?? {};
 
     if (!nome || !email || !role) {
       return NextResponse.json(
@@ -110,8 +109,7 @@ export async function POST(request: Request) {
         email,
         role: roleVal,
         passwordHash,
-        ativo: true,
-        projetoValorize: Boolean(projetoValorize)
+        ativo: true
       },
       select: {
         id: true,
@@ -119,7 +117,6 @@ export async function POST(request: Request) {
         email: true,
         role: true,
         ativo: true,
-        projetoValorize: true,
         createdAt: true
       }
     });

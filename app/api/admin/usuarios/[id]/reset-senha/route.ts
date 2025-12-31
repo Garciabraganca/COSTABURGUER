@@ -31,7 +31,6 @@ export async function POST(_request: Request, { params }: { params: { id: string
         email: true,
         role: true,
         ativo: true,
-        projetoValorize: true,
         createdAt: true
       }
     });

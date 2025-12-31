@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nome, email, senha, role, projetoValorize } = body;
+    const { nome, email, senha, role } = body;
 
     if (!nome || !email || !senha || !role) {
       return NextResponse.json(
@@ -72,8 +72,7 @@ export async function POST(request: Request) {
         email,
         passwordHash,
         role: roleVal,
-        ativo: true,
-        projetoValorize: Boolean(projetoValorize)
+        ativo: true
       }
     });
 
@@ -84,7 +83,6 @@ export async function POST(request: Request) {
         email: usuario.email,
         role: usuario.role,
         ativo: usuario.ativo,
-        projetoValorize: usuario.projetoValorize,
         createdAt: usuario.createdAt,
         updatedAt: usuario.updatedAt
       },

@@ -4,7 +4,7 @@ import { verificarJwt } from './lib/jwt';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const protectedRoutes = ['/cozinha', '/admin', '/gerente', '/motoboy', '/corretor'];
+  const protectedRoutes = ['/cozinha', '/admin', '/gerente', '/motoboy'];
 
   if (pathname.startsWith('/admin/bootstrap')) {
     return NextResponse.next();
@@ -33,15 +33,11 @@ export async function middleware(req: NextRequest) {
     if (pathname.startsWith('/motoboy') && payload.role !== 'MOTOBOY') {
       return NextResponse.redirect(new URL('/login', req.url));
     }
-
-    if (pathname.startsWith('/corretor') && payload.role !== 'CORRETOR') {
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/cozinha/:path*', '/admin/:path*', '/gerente/:path*', '/motoboy/:path*', '/corretor/:path*']
+  matcher: ['/cozinha/:path*', '/admin/:path*', '/gerente/:path*', '/motoboy/:path*']
 };

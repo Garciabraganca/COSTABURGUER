@@ -13,7 +13,6 @@ enum Role {
   GERENTE
   COZINHEIRO
   MOTOBOY
-  CORRETOR
 
   @@map("user_role")
 }
@@ -26,7 +25,6 @@ model Usuario {
   ativo                Boolean   @default(true)
   passwordHash         String    @map("password_hash")
   passwordUpdatedAt    DateTime? @map("password_updated_at")
-  projetoValorize      Boolean   @default(false) @map("projeto_valorize")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
 
