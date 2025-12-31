@@ -144,6 +144,10 @@ model Pedido {
   // Observações
   observacoes   String?
 
+  // Cancelamento
+  motivoCancelamento String?
+  canceladoEm   DateTime?
+
   // Dados de pagamento (Mercado Pago)
   statusPagamento         String?  @default("PENDENTE") // PENDENTE, AGUARDANDO_PAGAMENTO, PAGO, PAGAMENTO_REJEITADO, REEMBOLSADO
   mercadoPagoPaymentId    String?  @map("mp_payment_id")
@@ -338,4 +342,93 @@ model CatalogSeedState {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("catalog_seed_state")
+}
+
+// ============================================
+// CUPONS DE DESCONTO
+// ============================================
+
+model Cupom {
+  id            String   @id @default(cuid())
+  codigo        String   @unique // Código do cupom (ex: PRIMEIRACOMPRA)
+  descricao     String?  // Descrição do cupom
+
+  // Tipo de desconto
+  tipoDesconto  String   // 'percentual' ou 'fixo'
+  valorDesconto Float    // Valor do desconto (% ou R$)
+
+  // Limites
+  valorMinimo   Float?   // Valor mínimo do pedido para usar
+  valorMaximo   Float?   // Desconto máximo (para cupons percentuais)
+
+  // Validade
+  dataInicio    DateTime @default(now())
+  dataFim       DateTime?
+
+  // Uso
+  limiteUsos    Int?     // Limite total de usos (null = ilimitado)
+  usosAtual     Int      @default(0) // Quantidade de vezes já usado
+  usoUnico      Boolean  @default(false) // Se só pode usar uma vez por cliente
+
+  ativo         Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relação com pedidos que usaram este cupom
+  pedidos       PedidoCupom[]
+
+  @@index([codigo])
+  @@index([ativo])
+}
+
+// Relação entre Pedido e Cupom usado
+model PedidoCupom {
+  id          String   @id @default(cuid())
+
+  pedidoId    String   @unique
+  cupomId     String
+  cupom       Cupom    @relation(fields: [cupomId], references: [id])
+
+  // Dados no momento do uso
+  codigoUsado String   // Código usado (para histórico)
+  valorDesconto Float  // Valor do desconto aplicado
+
+  // Identificador do cliente (para controle de uso único)
+  clienteCelular String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([cupomId])
+  @@index([clienteCelular])
+}
+
+// ============================================
+// ALERTAS DE ESTOQUE
+// ============================================
+
+model AlertaEstoque {
+  id            String   @id @default(cuid())
+
+  tipoItem      String   // 'ingrediente' ou 'acompanhamento'
+  itemId        String
+  itemNome      String
+
+  estoqueAtual  Float
+  estoqueMinimo Float
+
+  // Status do alerta
+  status        String   @default("ATIVO") // ATIVO, RESOLVIDO, IGNORADO
+  resolvidoEm   DateTime?
+
+  // Notificação
+  notificado    Boolean  @default(false)
+  notificadoEm  DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tipoItem, itemId, status])
+  @@index([status])
+  @@index([createdAt])
 }
