@@ -126,9 +126,35 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar preferência:', error);
+
+    // Extract more detailed error info from Mercado Pago errors
+    let errorMessage = 'Erro ao criar preferência de pagamento';
+    let statusCode = 500;
+
+    if (error && typeof error === 'object') {
+      const mpError = error as { cause?: Array<{ code?: string; description?: string }>; message?: string; status?: number };
+
+      if (mpError.cause && Array.isArray(mpError.cause) && mpError.cause.length > 0) {
+        const cause = mpError.cause[0];
+        if (cause.code === 'unauthorized' || cause.description?.includes('invalid access token')) {
+          errorMessage = 'Token de acesso do Mercado Pago inválido. Verifique as credenciais.';
+          statusCode = 401;
+        } else {
+          errorMessage = cause.description || mpError.message || errorMessage;
+        }
+      } else if (mpError.message) {
+        if (mpError.message.includes('invalid access token') || mpError.message.includes('unauthorized')) {
+          errorMessage = 'Token de acesso do Mercado Pago inválido. Verifique as credenciais.';
+          statusCode = 401;
+        } else {
+          errorMessage = mpError.message;
+        }
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Erro ao criar preferência de pagamento' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 }
