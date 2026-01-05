@@ -9,19 +9,9 @@ const links = [
 
 export function GerenteNav() {
   return (
-    <nav style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+    <nav className="manager-nav">
       {links.map(link => (
-        <Link
-          key={link.href}
-          href={link.href}
-          style={{
-            padding: '10px 14px',
-            background: '#0a3d62',
-            color: '#fff',
-            borderRadius: '10px',
-            textDecoration: 'none'
-          }}
-        >
+        <Link key={link.href} href={link.href}>
           {link.label}
         </Link>
       ))}

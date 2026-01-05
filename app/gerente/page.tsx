@@ -58,11 +58,11 @@ export default async function GerentePage() {
   ];
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 px-6 py-8 text-white">
+    <main className="manager-page mx-auto max-w-6xl space-y-8 px-6 py-8">
       <GerenteNav />
       <header className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-[0.2em] text-white/60">Dashboard do Gerente</p>
-        <h1 className="text-4xl font-black leading-tight">Olá, {session?.role ?? 'Gerente'}</h1>
+        <p className="text-sm uppercase tracking-[0.2em] text-[color:var(--text-muted)]">Dashboard do Gerente</p>
+        <h1 className="text-4xl font-black leading-tight text-[color:var(--text-primary)]">Olá, {session?.role ?? 'Gerente'}</h1>
       </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -80,33 +80,33 @@ export default async function GerentePage() {
 
       <StepsWidget />
 
-      <SectionCard title="Últimos pedidos" subtitle="Fila do dia" className="bg-white/5">
-        <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/5">
-          <table className="min-w-full divide-y divide-white/10 text-sm">
-            <thead className="bg-white/5">
+      <SectionCard title="Últimos pedidos" subtitle="Fila do dia">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-card)]">
+          <table className="min-w-full divide-y divide-[var(--border-soft)] text-sm">
+            <thead className="bg-[color:var(--pill)]">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">#</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Horário</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-primary)]">#</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-primary)]">Status</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-primary)]">Horário</th>
               </tr>
             </thead>
             <tbody>
               {ultimos?.map(pedido => (
-                <tr key={pedido.id} className="border-b border-white/5 hover:bg-white/5">
+                <tr key={pedido.id} className="border-b border-[var(--border-soft)] hover:bg-[color:var(--pill)]">
                   <td className="px-4 py-3">
-                    <Link href={`/gerente/pedidos/${pedido.id}`} className="text-pink-200 hover:text-white">
+                    <Link href={`/gerente/pedidos/${pedido.id}`} className="font-semibold text-[color:var(--text-primary)] hover:text-[color:var(--text-muted)]">
                       #{pedido.numero}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-white/80">{pedido.status}</td>
-                  <td className="px-4 py-3 text-white/70">
+                  <td className="px-4 py-3 text-[color:var(--text-primary)]">{pedido.status}</td>
+                  <td className="px-4 py-3 text-[color:var(--text-muted)]">
                     {new Date(pedido.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </td>
                 </tr>
               ))}
               {(!ultimos || ultimos.length === 0) && (
                 <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-white/60">
+                  <td colSpan={3} className="px-4 py-6 text-center text-[color:var(--text-muted)]">
                     {erroPedidos ?? 'Sem pedidos recentes.'}
                   </td>
                 </tr>
