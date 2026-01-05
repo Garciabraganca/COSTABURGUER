@@ -4,28 +4,67 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // GET /api/cozinha/stream - Stream SSE de pedidos em tempo real para a cozinha
-export async function GET() {
+export async function GET(request: Request) {
   if (!prisma) {
     return new Response('Banco de dados não configurado', { status: 503 });
   }
 
   const encoder = new TextEncoder();
 
+  let cleanupHandler: (() => void) | null = null;
+
   const stream = new ReadableStream({
     async start(controller) {
+      let heartbeatInterval: NodeJS.Timeout | null = null;
+      let checkTimeout: NodeJS.Timeout | null = null;
+      let isRunning = true;
+      let abortHandler: (() => void) | null = null;
+
+      const cleanup = () => {
+        if (!isRunning) return;
+        isRunning = false;
+
+        if (abortHandler) {
+          request.signal.removeEventListener('abort', abortHandler);
+          abortHandler = null;
+        }
+
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+          heartbeatInterval = null;
+        }
+
+        if (checkTimeout) {
+          clearTimeout(checkTimeout);
+          checkTimeout = null;
+        }
+
+        try {
+          controller.close();
+        } catch (err) {
+          console.error('[SSE] Falha ao fechar controlador:', err);
+        }
+      };
+
       const sendEvent = (event: string, data: Record<string, unknown>) => {
-        const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-        controller.enqueue(encoder.encode(message));
+        if (!isRunning) return;
+
+        try {
+          const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+          controller.enqueue(encoder.encode(message));
+        } catch (err) {
+          console.error('[SSE] Falha ao enviar evento:', err);
+          cleanup();
+        }
       };
 
       // Heartbeat para manter conexão
-      const heartbeatInterval = setInterval(() => {
+      heartbeatInterval = setInterval(() => {
         sendEvent('heartbeat', { timestamp: new Date().toISOString() });
       }, 30000);
 
       // Estado anterior para comparação
       let pedidosAnteriores: Map<string, string> = new Map();
-      let isRunning = true;
 
       const checkPedidos = async () => {
         if (!isRunning) return;
@@ -124,12 +163,12 @@ export async function GET() {
 
           // Próxima verificação
           if (isRunning) {
-            setTimeout(checkPedidos, 2000);
+            checkTimeout = setTimeout(checkPedidos, 2000);
           }
         } catch (error) {
           console.error('Erro no stream da cozinha:', error);
           if (isRunning) {
-            setTimeout(checkPedidos, 5000);
+            checkTimeout = setTimeout(checkPedidos, 5000);
           }
         }
       };
@@ -189,10 +228,20 @@ export async function GET() {
       });
 
       // Iniciar polling
-      setTimeout(checkPedidos, 2000);
+      checkTimeout = setTimeout(checkPedidos, 2000);
+
+      abortHandler = () => {
+        console.log('[SSE] Stream da cozinha abortado');
+        cleanup();
+      };
+
+      request.signal.addEventListener('abort', abortHandler);
+
+      cleanupHandler = cleanup;
     },
     cancel() {
       console.log('[SSE] Stream da cozinha cancelado');
+      cleanupHandler?.();
     }
   });
 
