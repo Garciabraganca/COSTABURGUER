@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const CONNECTION_MAX_MS = 4.5 * 60 * 1000; // 270s - encerra antes do timeout de 300s da Vercel
+
 // GET /api/cozinha/stream - Stream SSE de pedidos em tempo real para a cozinha
 export async function GET(request: Request) {
   if (!prisma) {
@@ -17,6 +19,7 @@ export async function GET(request: Request) {
     async start(controller) {
       let heartbeatInterval: NodeJS.Timeout | null = null;
       let checkTimeout: NodeJS.Timeout | null = null;
+      let shutdownTimeout: NodeJS.Timeout | null = null;
       let isRunning = true;
       let abortHandler: (() => void) | null = null;
 
@@ -37,6 +40,11 @@ export async function GET(request: Request) {
         if (checkTimeout) {
           clearTimeout(checkTimeout);
           checkTimeout = null;
+        }
+
+        if (shutdownTimeout) {
+          clearTimeout(shutdownTimeout);
+          shutdownTimeout = null;
         }
 
         try {
@@ -229,6 +237,16 @@ export async function GET(request: Request) {
 
       // Iniciar polling
       checkTimeout = setTimeout(checkPedidos, 2000);
+
+      shutdownTimeout = setTimeout(() => {
+        console.log('[SSE] Encerrando stream da cozinha por tempo máximo de conexão');
+        sendEvent('shutdown', {
+          reason: 'timeout',
+          message: 'Conexão reiniciada para evitar timeout do provedor',
+          reconnect: true
+        });
+        cleanup();
+      }, CONNECTION_MAX_MS);
 
       abortHandler = () => {
         console.log('[SSE] Stream da cozinha abortado');
