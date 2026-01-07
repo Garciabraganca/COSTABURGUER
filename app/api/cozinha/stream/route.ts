@@ -78,6 +78,7 @@ export async function GET(request: Request) {
         if (!isRunning) return;
 
         try {
+          // Limitar a 50 pedidos ativos para reduzir transferência de dados
           const pedidos = await prisma!.pedido.findMany({
             where: {
               status: {
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
               }
             },
             orderBy: { createdAt: 'asc' },
+            take: 50,
             include: {
               burgers: {
                 include: {
@@ -109,9 +111,7 @@ export async function GET(request: Request) {
                   id: true,
                   token: true,
                   status: true,
-                  motoboyNome: true,
-                  latitudeAtual: true,
-                  longitudeAtual: true
+                  motoboyNome: true
                 }
               }
             }
@@ -169,19 +169,19 @@ export async function GET(request: Request) {
 
           pedidosAnteriores = pedidosAtuais;
 
-          // Próxima verificação
+          // Próxima verificação - intervalo aumentado para reduzir uso de quota
           if (isRunning) {
-            checkTimeout = setTimeout(checkPedidos, 2000);
+            checkTimeout = setTimeout(checkPedidos, 5000);
           }
         } catch (error) {
           console.error('Erro no stream da cozinha:', error);
           if (isRunning) {
-            checkTimeout = setTimeout(checkPedidos, 5000);
+            checkTimeout = setTimeout(checkPedidos, 10000);
           }
         }
       };
 
-      // Enviar estado inicial
+      // Enviar estado inicial - limitar a 50 pedidos
       const pedidosIniciais = await prisma!.pedido.findMany({
         where: {
           status: {
@@ -189,6 +189,7 @@ export async function GET(request: Request) {
           }
         },
         orderBy: { createdAt: 'asc' },
+        take: 50,
         include: {
           burgers: {
             include: {

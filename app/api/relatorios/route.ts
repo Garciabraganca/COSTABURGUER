@@ -55,59 +55,93 @@ export async function GET(request: Request) {
         inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     }
 
-    // Buscar pedidos do período (excluindo cancelados)
-    const pedidos = await prisma.pedido.findMany({
-      where: {
-        createdAt: {
-          gte: inicio,
-          lte: fim
-        },
-        status: {
-          not: 'CANCELADO'
-        }
+    const whereClause = {
+      createdAt: {
+        gte: inicio,
+        lte: fim
       },
-      include: {
+      status: {
+        not: 'CANCELADO'
+      }
+    };
+
+    // Usar agregação do banco de dados para métricas gerais (reduz transferência de dados)
+    const [resumoAgregado, statusAgrupado, tipoEntregaAgrupado] = await Promise.all([
+      prisma.pedido.aggregate({
+        where: whereClause,
+        _count: true,
+        _sum: {
+          total: true,
+          custoTotal: true,
+          lucro: true
+        }
+      }),
+      prisma.pedido.groupBy({
+        by: ['status'],
+        where: whereClause,
+        _count: true
+      }),
+      prisma.pedido.groupBy({
+        by: ['tipoEntrega'],
+        where: whereClause,
+        _count: true
+      })
+    ]);
+
+    const totalPedidos = resumoAgregado._count;
+    const receitaTotal = resumoAgregado._sum.total || 0;
+    const custoTotal = resumoAgregado._sum.custoTotal || 0;
+    const lucroTotal = resumoAgregado._sum.lucro || 0;
+    const ticketMedio = totalPedidos > 0 ? receitaTotal / totalPedidos : 0;
+    const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
+
+    // Converter groupBy para objetos
+    const pedidosPorStatus: Record<string, number> = {};
+    for (const s of statusAgrupado) {
+      pedidosPorStatus[s.status] = s._count;
+    }
+
+    const pedidosPorTipoEntrega: Record<string, number> = {};
+    for (const t of tipoEntregaAgrupado) {
+      pedidosPorTipoEntrega[t.tipoEntrega] = t._count;
+    }
+
+    // Para ingredientes e histórico, buscar apenas dados necessários (limitado a 500 pedidos)
+    const pedidos = await prisma.pedido.findMany({
+      where: whereClause,
+      take: 500,
+      select: {
+        createdAt: true,
+        total: true,
+        custoTotal: true,
+        lucro: true,
         burgers: {
-          include: {
+          select: {
             ingredientes: {
-              include: {
+              select: {
+                quantidade: true,
+                precoUnitario: true,
+                custoUnitario: true,
                 ingrediente: {
-                  select: { id: true, slug: true, nome: true, categoria: { select: { slug: true, nome: true } } }
+                  select: { slug: true, nome: true, categoria: { select: { nome: true } } }
                 }
               }
             }
           }
         },
         acompanhamentos: {
-          include: {
+          select: {
+            quantidade: true,
+            precoUnitario: true,
+            custoUnitario: true,
             acompanhamento: {
-              select: { id: true, slug: true, nome: true }
+              select: { slug: true, nome: true }
             }
           }
         }
       },
       orderBy: { createdAt: 'desc' }
     });
-
-    // Calcular métricas gerais
-    const totalPedidos = pedidos.length;
-    const receitaTotal = pedidos.reduce((sum, p) => sum + p.total, 0);
-    const custoTotal = pedidos.reduce((sum, p) => sum + p.custoTotal, 0);
-    const lucroTotal = pedidos.reduce((sum, p) => sum + p.lucro, 0);
-    const ticketMedio = totalPedidos > 0 ? receitaTotal / totalPedidos : 0;
-    const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
-
-    // Contagem por status
-    const pedidosPorStatus: Record<string, number> = {};
-    for (const p of pedidos) {
-      pedidosPorStatus[p.status] = (pedidosPorStatus[p.status] || 0) + 1;
-    }
-
-    // Contagem por tipo de entrega
-    const pedidosPorTipoEntrega: Record<string, number> = {};
-    for (const p of pedidos) {
-      pedidosPorTipoEntrega[p.tipoEntrega] = (pedidosPorTipoEntrega[p.tipoEntrega] || 0) + 1;
-    }
 
     // Ingredientes mais usados
     const contagemIngredientes: Record<string, { nome: string; categoria: string; quantidade: number; receita: number; custo: number }> = {};

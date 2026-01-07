@@ -37,35 +37,61 @@ type OrderPayload = {
   cupomCodigo?: string; // Código do cupom de desconto
 };
 
-export async function GET() {
+export async function GET(req: Request) {
   if (!prisma) {
     return NextResponse.json(Array.from(memoryStore.values()));
   }
 
-  const pedidos = await prisma.pedido.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      burgers: {
-        include: {
-          ingredientes: {
-            include: {
-              ingrediente: {
-                select: { id: true, slug: true, nome: true }
+  const { searchParams } = new URL(req.url);
+  const take = Math.min(parseInt(searchParams.get('take') || '50'), 100); // Max 100
+  const skip = parseInt(searchParams.get('skip') || '0');
+  const status = searchParams.get('status'); // Filtro opcional por status
+
+  const where: Record<string, unknown> = {};
+  if (status) {
+    where.status = status;
+  }
+
+  // Executar contagem e busca em paralelo
+  const [pedidos, total] = await Promise.all([
+    prisma.pedido.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take,
+      skip,
+      include: {
+        burgers: {
+          include: {
+            ingredientes: {
+              include: {
+                ingrediente: {
+                  select: { id: true, slug: true, nome: true }
+                }
               }
             }
           }
-        }
-      },
-      acompanhamentos: {
-        include: {
-          acompanhamento: {
-            select: { id: true, slug: true, nome: true }
+        },
+        acompanhamentos: {
+          include: {
+            acompanhamento: {
+              select: { id: true, slug: true, nome: true }
+            }
           }
         }
       }
+    }),
+    prisma.pedido.count({ where })
+  ]);
+
+  return NextResponse.json({
+    pedidos,
+    pagination: {
+      total,
+      take,
+      skip,
+      hasMore: skip + pedidos.length < total
     }
   });
-  return NextResponse.json(pedidos);
 }
 
 export async function POST(req: Request) {
