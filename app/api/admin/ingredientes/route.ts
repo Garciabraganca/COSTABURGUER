@@ -11,7 +11,25 @@ export async function GET(request: Request) {
   if (auth.ok === false) return auth.response;
   if (!prisma) return NextResponse.json({ error: 'Banco não configurado (DATABASE_URL)' }, { status: 503 });
 
-  const ingredientes = await prisma.ingrediente.findMany({ orderBy: { ordem: 'asc' } });
+  // Selecionar apenas campos necessários para reduzir transferência de dados
+  const ingredientes = await prisma.ingrediente.findMany({
+    orderBy: { ordem: 'asc' },
+    select: {
+      id: true,
+      slug: true,
+      nome: true,
+      preco: true,
+      custo: true,
+      estoque: true,
+      estoqueMinimo: true,
+      unidade: true,
+      categoriaId: true,
+      ordem: true,
+      ativo: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
   return NextResponse.json(ingredientes);
 }
 

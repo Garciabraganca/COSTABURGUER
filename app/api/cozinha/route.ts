@@ -45,12 +45,14 @@ export async function GET(request: Request) {
       };
     }
 
+    // Limitar a 50 pedidos ativos para reduzir transferência de dados
     const pedidos = await prisma.pedido.findMany({
       where,
       orderBy: [
         { status: 'asc' }, // CONFIRMADO primeiro
         { createdAt: 'asc' } // Mais antigos primeiro
       ],
+      take: 50,
       include: {
         burgers: {
           include: {
@@ -75,10 +77,7 @@ export async function GET(request: Request) {
             id: true,
             token: true,
             status: true,
-            motoboyNome: true,
-            latitudeAtual: true,
-            longitudeAtual: true,
-            ultimaAtualizacao: true
+            motoboyNome: true
           }
         }
       }
